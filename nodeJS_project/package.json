@@ -1,0 +1,29 @@
+{
+  "name": "api_rest",
+  "version": "1.0.0",
+  "description": "my rest AIP",
+  "license": "ISC",
+  "author": "Arshi",
+  "type": "commonjs",
+  "main": "app.js",
+  "scripts": {
+    "start": "nodemon app.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.1.0",
+    "mongoose": "^9.3.1",
+    "multer": "^2.1.1",
+    "nodemon": "^3.1.14",
+    "qrcode": "^1.5.4",
+    "speakeasy": "^2.0.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  }
+}

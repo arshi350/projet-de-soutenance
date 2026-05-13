@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { totp } = require('speakeasy');
 
 // const imageSchema = new mongoose.Schema({
 //   nom: String,
@@ -63,6 +64,14 @@ const eventSchema = new mongoose.Schema({
         type: String,
         enum: ['en attente', 'en cours', 'terminer'],
         default: 'en attente'
+    },
+    confirmedInvites: {
+        type: Number,
+        default: 0
+    },
+    totalInvites: {
+        type: Number,
+        default: 0
     }
 })
 

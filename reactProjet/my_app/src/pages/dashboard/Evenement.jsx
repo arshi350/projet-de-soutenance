@@ -1,10 +1,14 @@
 import React from 'react';
+import QuickStats from '../../components/dashboard/event/QuickStats';
+import EventManagement from '../../components/dashboard/event/eventManagement';
+import Footer from '../../components/dashboard/event/footer';
 
-const Evenement = () => (
-  <div className="p-8">
-    <h2 className="text-2xl font-bold mb-4">Événement</h2>
-    <p>Contenu de la section Événement.</p>
-  </div>
-);
-
-export default Evenement;
+export default function Evenement() {
+  return<>
+    <div id='evenement' className="p-8 ">
+      <QuickStats />
+      <EventManagement />
+      <Footer/>
+    </div>
+  </>
+}

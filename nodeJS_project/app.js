@@ -9,6 +9,7 @@ const InviteRouter = require('./routes/invites');
 const QrRouter = require('./routes/generateQrCode');
 const statsRouter = require('./routes/stats');
 const cors = require('cors');
+const { startStatusScheduler } = require('./services/eventStatusScheduler');
 
 require('dotenv').config();
 
@@ -90,6 +91,8 @@ connecter(url, (error)=>{
         process.exit(-1)
     }else{
         console.log("connexion a mongoDB reussit !")
+        // Démarrer le planificateur de statuts
+        startStatusScheduler();
         app.listen({port},()=>{
             console.log(`server is running on port ${port}`);
         })

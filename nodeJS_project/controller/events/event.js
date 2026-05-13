@@ -1,23 +1,34 @@
 const { eventModel } = require("../../models/eventModels/event");
 const mongoose = require('mongoose')
+const path = require('path');
 
 const AddEvent = async (req, res) => {
     try {
+       
         // Les champs texte sont dans req.body
         const { titre, description, DateDebut, DateFin, heureDebut, heureFin, lieu, categorie, userId } = req.body;
         
-        // L'image est dans req.file (grâce à multer)
-        const imagePath = req.file ? req.file.path : null;
+        // L'image est dans req.file
+        let imagePath = null;
+        if (req.file) {
+            // Stocker le chemin relatif pour l'accès web
+            imagePath = '/uploads/' + path.basename(req.file.path);
+        } else {
+            console.log('⚠️ Aucune image reçue');
+        }
 
         // Vérification des champs obligatoires
         if (!titre || !description || !DateDebut || !DateFin || !heureDebut || !heureFin || !lieu || !categorie) {
             return res.status(400).json({ message: "Tous les champs sont obligatoires" });
         }
 
-        // Vérification de l'image
-        // if (!imagePath) {
-        //     return res.status(400).json({ message: "L'image est obligatoire" });
-        // }
+        // Validation des dates
+        const startDateTime = new Date(`${DateDebut}T${heureDebut}`);
+        const endDateTime = new Date(`${DateFin}T${heureFin}`);
+        
+        if (endDateTime <= startDateTime) {
+            return res.status(400).json({ message: "La date de fin doit être postérieure à la date de début" });
+        }
 
         // Générer un code unique à 8 caractères
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -25,7 +36,9 @@ const AddEvent = async (req, res) => {
         for (let i = 0; i < 8; i++) {
             EventCode += characters.charAt(Math.floor(Math.random() * characters.length));
         }
-        console.log("code :", EventCode)
+        
+        console.log("Code généré:", EventCode);
+        
         // Création de l'événement
         const NewEvent = new eventModel({
             titre,
@@ -36,12 +49,12 @@ const AddEvent = async (req, res) => {
             heureFin,
             lieu,
             categorie,
-            image: imagePath,  // ← On stocke le chemin de l'image
+            image: imagePath,
             userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : undefined,
             EventCode: EventCode
         });
 
-       const result = await NewEvent.save();
+        const result = await NewEvent.save();
         
         res.status(201).json({ 
             message: "Événement créé avec succès", 
@@ -49,8 +62,11 @@ const AddEvent = async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Erreur lors de la création de l'événement", error: error.message });
+        console.error('❌ Erreur:', error);
+        res.status(500).json({ 
+            message: "Erreur lors de la création de l'événement", 
+            error: error.message 
+        });
     }
 };
 
@@ -69,8 +85,9 @@ const getAllEventByUser = async (req, res) => {
 
         // Si aucun événement trouvé
         if (!events || events.length === 0) {
-            return res.status(404).json({ 
-                message: 'Aucun événement trouvé pour cet utilisateur' 
+            return res.status(200).json({ 
+                message: 'Aucun événement trouvé pour cet utilisateur', 
+                events: []
             });
         }
 
@@ -142,11 +159,11 @@ const updateEvent = async (req, res) => {
 //recuperer tous les evenement recement creer par un utilisateur
 const getRecentEventsByUser = async (req, res) => {
     try {
-        const id = req.params;
+        const id = req.params.id; // id est maintenant une string
 
-        //verification de la validite de l'id de l'evenement
+        //verification de la validite de l'id utilisateur
         if(!mongoose.Types.ObjectId.isValid(id)){
-            return res.status(400).json({message: "id de l'evenement invalide"})
+            return res.status(400).json({message: "id utilisateur invalide"})
         }
 
         //recherche de tous les evenement recement creer par un utilisateur
@@ -161,5 +178,25 @@ const getRecentEventsByUser = async (req, res) => {
 }
 
 
+//recuperer tous les evenements recent de la base de donnee
+const getRecentvents = async (req, res) =>{
+    try {
 
-module.exports = { AddEvent, getAllEventByUser, deleteEvent, updateEvent, getRecentEventsByUser };
+        //recuperer les 5 dernier evenement de la base de donnees
+        const events = await eventModel.find().sort({createdAt: -1}).limit(5);
+
+        return res.status(200).json({ 
+            message: "Événements récents récupérés avec succès", 
+            count: events.length, 
+            events 
+        })
+        
+
+    } catch (error) {
+        return res.status(500).json({message : "erreur lors de la recuperation de l'evenement", erreur : error})
+    }
+}
+
+
+
+module.exports = { AddEvent, getAllEventByUser, deleteEvent, updateEvent, getRecentEventsByUser, getRecentvents };

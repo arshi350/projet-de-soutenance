@@ -19,12 +19,22 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
 
-  // Vérifie le token au montage
-  useEffect(() => {
-    if (token && !isTokenValid()) {
-      handleRefreshToken();
+  // Définir handleRefreshToken AVANT les useEffect qui l'utilisent
+  const handleRefreshToken = useCallback(async () => {
+    setLoading(true);
+    try {
+      const newToken = await refreshTokenService();
+      setToken(newToken);
+      setIsAuthenticated(true);
+      return newToken;
+    } catch (err) {
+      setIsAuthenticated(false);
+      setUser(null);
+      setToken(null);
+      throw err;
+    } finally {
+      setLoading(false);
     }
-    // eslint-disable-next-line
   }, []);
 
   // Connexion utilisateur
@@ -60,27 +70,40 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Rafraîchir le token
-  const handleRefreshToken = useCallback(async () => {
-    setLoading(true);
-    try {
-      const newToken = await refreshTokenService();
-      setToken(newToken);
-      setIsAuthenticated(true);
-    } catch (err) {
-      setIsAuthenticated(false);
-      setUser(null);
-      setToken(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Mettre à jour l'utilisateur dans le contexte et le localStorage
   const updateUser = (updatedUser) => {
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
   };
+
+  // Vérification initiale du token (après la définition des fonctions)
+  useEffect(() => {
+    const checkToken = async () => {
+      if (token && !isTokenValid()) {
+        try {
+          await handleRefreshToken();
+        } catch (err) {
+          console.error('Erreur lors du rafraîchissement initial du token:', err);
+        }
+      }
+    };
+    
+    checkToken();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Ne dépend que du token initial
+
+  // Rafraîchit automatiquement le token toutes les 14 minutes si connecté
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const interval = setInterval(() => {
+      handleRefreshToken().catch(err => {
+        console.error('Erreur lors du rafraîchissement automatique du token:', err);
+      });
+    }, 14 * 60 * 1000); // 14 minutes
+    
+    return () => clearInterval(interval);
+  }, [isAuthenticated, handleRefreshToken]);
 
   return (
     <AuthContext.Provider value={{

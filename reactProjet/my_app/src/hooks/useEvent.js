@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { addEvent, getUserEvents, getRecentEvents, deleteEvent, updateEvent } from '../services/eventService';
+import { useState, useCallback, useEffect } from "react";
+import { addEvent, getUserEvents, getRecentEvents, getRecentEvent, deleteEvent, updateEvent } from '../services/eventService';
 
 //hook ajouter un événement
 export const useAddEvent = () => {
@@ -78,7 +78,7 @@ export const useGetUserEvents = (userId, token, autoFetch = true) => {
 };
 
 
-//HOOK POUR RÉCUPÉRER LES ÉVÉNEMENTS RÉCENTS
+//HOOK POUR RÉCUPÉRER LES ÉVÉNEMENTS RÉCENTS d'UN UTILISATEUR
 export const useGetRecentEvents = (userId, token, limit = 5, autoFetch = true) => {
   const [recentEvents, setRecentEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -114,6 +114,42 @@ export const useGetRecentEvents = (userId, token, limit = 5, autoFetch = true) =
   }, [autoFetch, userId, token, fetchRecentEvents]);
 
   return { recentEvents, loading, error, refetch: fetchRecentEvents };
+  console.log('recentEvents', recentEvents);
+};
+
+//HOOK POUR RÉCUPÉRER LES ÉVÉNEMENTS RÉCENTS de la bd
+export const useGetRecentEvent = (token, autoFetch = true) => {
+  const [recentEvent, setRecentEvent] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchRecentEvent = useCallback(async () => {
+    if (!token) {
+      setError('Utilisateur non authentifié');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await getRecentEvent(token);
+      setRecentEvent(response);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Erreur de chargement';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (autoFetch && token) {
+      fetchRecentEvent();
+    }
+  }, [autoFetch, token, fetchRecentEvent]);
+
+  return { recentEvent, loading, error, refetch: fetchRecentEvent };
 };
 
 //HOOK POUR SUPPRIMER UN ÉVÉNEMENT

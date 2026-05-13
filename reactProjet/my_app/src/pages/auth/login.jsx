@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, QrCode, ArrowRight, Zap, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useLogin } from '../../hooks/useAuth';
+import { useLogin, useRefreshToken } from '../../hooks/useAuth';
 import toast, { Toaster } from 'react-hot-toast';
 
 const ConnexionPage = () => {
@@ -16,6 +16,7 @@ const ConnexionPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login, loading: loginLoading, error: loginError } = useLogin();
+  const refreshToken = useRefreshToken();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -51,6 +52,12 @@ const ConnexionPage = () => {
         });
 
         if (user) {
+          // Rafraîchir l'access token immédiatement après connexion
+          try {
+            await refreshToken();
+          } catch (e) {
+            // Optionnel : afficher une notification d'erreur de refresh
+          }
           toast.success('Connexion réussie !', {
             position: 'top-center',
           });

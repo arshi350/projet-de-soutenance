@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from 'react-router-dom';
 import Header from "../../components/dashboard/header";
 import VueDensemble from "./VueDensemble";
 import Evenement from "./Evenement";
@@ -7,7 +8,9 @@ import Parametres from "./Parametres";
 import { useAuthContext } from "../../context/AuthContext";
 
 export function Dashboard() {
-  const [activeSection, setActiveSection] = useState("vue");
+  const { section } = useParams();
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState(section || "vue");
   const [showProfile, setShowProfile] = useState(false);
 
   const { user, isAuthenticated, logout } = useAuthContext();
@@ -24,6 +27,15 @@ export function Dashboard() {
   const handleLogout = () => {
     logout();
   };
+
+  useEffect(() => {
+    const validSections = ["vue", "evenement", "template", "parametres"];
+    if (!section || !validSections.includes(section)) {
+      navigate('/dashboard/vue', { replace: true });
+      return;
+    }
+    setActiveSection(section);
+  }, [section, navigate]);
 
   let SectionComponent = null;
   if (activeSection === "vue") SectionComponent = <VueDensemble />;

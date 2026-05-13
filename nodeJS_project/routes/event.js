@@ -1,6 +1,6 @@
 const express = require('express');
 const eventRouter = express.Router()
-const {AddEvent, getAllEventByUser, deleteEvent, updateEvent, getRecentEventsByUser} = require("../controller/events/event")
+const {AddEvent, getAllEventByUser, deleteEvent, updateEvent, getRecentEventsByUser, getRecentvents} = require("../controller/events/event")
 const authenticateToken = require('../middleware/authmiddlewre');
 const upload = require("../middleware/upload")
 const verifyUserEvent = require("../middleware/verifyuser")
@@ -45,7 +45,7 @@ const verifyUserEvent = require("../middleware/verifyuser")
  *       400:
  *         description: Paramètres manquants ou invalides
  */
-eventRouter.route("/addEvent").post(upload.single('image'),authenticateToken, AddEvent)
+eventRouter.route("/addEvent").post(upload.single('image'), AddEvent)
 
 /**
  * @swagger
@@ -87,7 +87,19 @@ eventRouter.route("/getAllEventByUser/:id").get(authenticateToken, getAllEventBy
  *       404:
  *         description: Utilisateur non trouvé
  */
-eventRouter.route("/getRecentEventsByUser/:id").get(authenticateToken, getRecentEventsByUser)
+eventRouter.route("/getRecentEventsByUser/:id").get( getRecentEventsByUser)
+
+/**
+ * @swagger
+ * /api/event/getRecentvents:
+ *   get:
+ *     summary: Récupérer les événements récents
+ *     tags: [Event]
+ *     responses:
+ *       200:
+ *         description: Liste des événements récents
+ */
+eventRouter.route("/getRecentvents").get(getRecentvents)
 
 /**
  * @swagger

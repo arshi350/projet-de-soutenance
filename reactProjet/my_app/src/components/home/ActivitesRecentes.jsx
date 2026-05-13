@@ -1,51 +1,75 @@
-import React from 'react';
-import { Eye, Wine, GraduationCap, Scissors } from 'lucide-react';
-
-const data = [
-  {
-    id: 1,
-    evenement: "Gala annuel",
-    date: "12 Mars 2024",
-    invites: 250,
-    presents: 230,
-    taux: 92,
-    color: "bg-orange-100 text-orange-600",
-    icon: <Wine size={18} />,
-  },
-  {
-    id: 2,
-    evenement: "Webinar IA",
-    date: "08 Mars 2024",
-    invites: 500,
-    presents: 380,
-    taux: 76,
-    color: "bg-blue-50 text-orange-400", // Adapté au style bleuté de la ligne
-    icon: <GraduationCap size={18} />,
-    rowBg: "bg-blue-50/50"
-  },
-  {
-    id: 3,
-    evenement: "Afterwork UX",
-    date: "05 Mars 2024",
-    invites: 100,
-    presents: 84,
-    taux: 84,
-    color: "bg-red-100 text-red-500",
-    icon: <Scissors size={18} />,
-  },
-   {
-    id: 4,
-    evenement: "Afterwork UX",
-    date: "05 Mars 2024",
-    invites: 100,
-    presents: 100,
-    taux: 100,
-    color: "bg-red-100 text-red-500",
-    icon: <Scissors size={18} />,
-  },
-];
+import React, { useMemo } from 'react';
+import { Eye, Wine, GraduationCap, Scissors, Loader, AlertCircle } from 'lucide-react';
+import { useGetRecentEvent } from '../../hooks/useEvent';
 
 const ActivitesRecentes = () => {
+  const token = localStorage.getItem('accessToken');
+  const { recentEvent, loading, error } = useGetRecentEvent(token, true);
+
+  // Fonction pour formater la date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Date non définie';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  // Fonction pour obtenir une icône basée sur la catégorie
+  const getIconAndColor = (categorie) => {
+    const cat = (categorie || '').toLowerCase();
+    if (cat.includes('gala') || cat.includes('soirée')) {
+      return { icon: <Wine size={18} />, color: 'bg-orange-100 text-orange-600' };
+    }
+    if (cat.includes('conférence') || cat.includes('webinar') || cat.includes('formation')) {
+      return { icon: <GraduationCap size={18} />, color: 'bg-blue-50 text-blue-600' };
+    }
+    if (cat.includes('afterwork') || cat.includes('réunion')) {
+      return { icon: <Scissors size={18} />, color: 'bg-red-100 text-red-500' };
+    }
+    return { icon: <Wine size={18} />, color: 'bg-slate-100 text-slate-600' };
+  };
+
+  // Convertir recentEvent en tableau s'il est un objet unique ou s'il contient un tableau
+  const eventsArray = useMemo(() => {
+    if (!recentEvent) return [];
+    if (Array.isArray(recentEvent)) return recentEvent;
+    if (Array.isArray(recentEvent.events)) return recentEvent.events;
+    if (Array.isArray(recentEvent.data)) return recentEvent.data;
+    return [recentEvent];
+  }, [recentEvent]);
+
+  if (loading) {
+    return (
+      <div className="p-8 relative z-10">
+        <div className="w-[82%] mx-auto">
+          <div className="flex justify-center items-center h-64">
+            <Loader size={48} className="animate-spin text-blue-600" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 relative z-10">
+        <div className="w-[82%] mx-auto">
+          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <AlertCircle size={24} className="text-red-600" />
+            <div>
+              <p className="font-semibold text-red-700">Erreur de chargement</p>
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 relative z-10 ">
       <div className="w-[82%] mx-auto">
@@ -76,33 +100,50 @@ const ActivitesRecentes = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {data.map((item) => (
-                <tr key={item.id} className={`${item.rowBg || 'bg-white'} hover:bg-gray-50 transition-colors`}>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${item.color}`}>
-                        {item.icon}
-                      </div>
-                      <span className="font-bold text-gray-800 text-sm">{item.evenement}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{item.date}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 text-center">{item.invites}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 text-center">{item.presents}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      item.taux > 80 ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-400'
-                    }`}>
-                      {item.taux}%
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-yellow-700 hover:text-yellow-800 transition-colors">
-                      <Eye size={20} />
-                    </button>
+              {eventsArray.length > 0 ? (
+                eventsArray.map((event) => {
+                  const { icon, color } = getIconAndColor(event.categorie);
+                  const eventTitle = event.titre || event.title || 'Événement sans titre';
+                  const eventDate = formatDate(event.DateDebut || event.date || event.startDate);
+                  const invites = event.confirmedGuests || event.participants || 0;
+                  const presents = event.attendees || invites || 0;
+                  const taux = invites > 0 ? Math.round((presents / invites) * 100) : 0;
+
+                  return (
+                    <tr key={event.id || event._id} className="bg-white hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${color}`}>
+                            {icon}
+                          </div>
+                          <span className="font-bold text-gray-800 text-sm line-clamp-1">{eventTitle}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{eventDate}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600 text-center">{invites}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600 text-center">{presents}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          taux > 80 ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-400'
+                        }`}>
+                          {taux}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button className="text-yellow-700 hover:text-yellow-800 transition-colors">
+                          <Eye size={20} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                    Aucun événement récent trouvé
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

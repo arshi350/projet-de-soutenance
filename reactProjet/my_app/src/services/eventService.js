@@ -9,7 +9,6 @@ export const addEvent = async (eventData, token) => {
         const response = await axios.post(`${API_URL}/event/addEvent`, eventData, {
             headers: {
                 Authorization: `Bearer ${token}`,
-                'Content-Type': 'multipart/form-data',
             },
         })
         return response.data;
@@ -54,6 +53,23 @@ export const getRecentEvents = async (userId, token) => {
     }
 }
 
+//service pour recuperer les evenement recent 
+export const getRecentEvent = async (token) => {
+    try {
+        const response = await axios.get(`${API_URL}/event/getRecentvents`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            }
+        });
+        const data = response.data;
+        return data?.events || data?.data || data;
+
+    } catch (error) {
+        console.error('erreur lors de la récupération de l\'événement récent:', error);
+        throw error;
+    }
+}
+
 //service pour supprimer un événement
 export const deleteEvent = async (eventId, token) => {
     try {
@@ -78,7 +94,6 @@ export const updateEvent = async (eventId, eventData, token) => {
         const response = await axios.put(`${API_URL}/event/updateEvent/${eventId}`, eventData, {
             headers: {
                 Authorization: `Bearer ${token}`,
-                'Content-Type': 'multipart/form-data',  
             }
         })
 

@@ -53,6 +53,7 @@ const addUser = async (req, res) =>{
             phone,
             city,
             password : hashpassword,
+            role: req.body.role || 'user'
             // date: Date.now() // Ajout de la date de création
         })
 
@@ -137,6 +138,57 @@ const updateUser = async (req, res)=>{
     }
 }
 
+// Suspendre un utilisateur
+const suspendUser = async (req, res) => {
+    try {
+        const id = req.params.id
+        const reason = req.body.reason || 'Compte suspendu par un administrateur'
+
+        if (!id || id.length !== 24) {
+            return res.status(400).json({ message: 'ID utilisateur invalide' })
+        }
+
+        const user = await userModel.findByIdAndUpdate(
+            id,
+            { suspended: true, suspensionReason: reason },
+            { new: true }
+        )
+
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' })
+        }
+
+        return res.status(200).json({ message: 'Utilisateur suspendu avec succès', user })
+    } catch (error) {
+        return res.status(500).json({ message: 'Erreur lors de la suspension de l utilisateur', error })
+    }
+}
+
+// Annuler la suspension d'un utilisateur
+const unsuspendUser = async (req, res) => {
+    try {
+        const id = req.params.id
+
+        if (!id || id.length !== 24) {
+            return res.status(400).json({ message: 'ID utilisateur invalide' })
+        }
+
+        const user = await userModel.findByIdAndUpdate(
+            id,
+            { suspended: false, suspensionReason: '' },
+            { new: true }
+        )
+
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé' })
+        }
+
+        return res.status(200).json({ message: 'Suspension annulée avec succès', user })
+    } catch (error) {
+        return res.status(500).json({ message: 'Erreur lors de l annulation de la suspension', error })
+    }
+}
+
 //supprimer un utilisateur specifique
 const deleteUser = async (req, res)=>{
     try {
@@ -149,4 +201,13 @@ const deleteUser = async (req, res)=>{
     }
 }
 
-module.exports = {addUser, getAllUsers, getOneUser, updateUser, deleteUser}
+const addAdmin = async (req, res) => {
+    try {
+        req.body.role = 'admin'
+        return await addUser(req, res)
+    } catch (error) {
+        return res.status(500).json({ message: 'erreur lors de l ajout de l administrateur', error })
+    }
+}
+
+module.exports = {addUser, addAdmin, getAllUsers, getOneUser, updateUser, deleteUser, suspendUser, unsuspendUser}

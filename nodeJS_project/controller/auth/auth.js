@@ -19,6 +19,10 @@ const userLogin = async (req, res) => {
             return res.status(401).json({ message: "email ou mot de passe incorrect" });
         }
 
+        if (user.suspended) {
+            return res.status(403).json({ message: "Compte suspendu. Veuillez contacter un administrateur." });
+        }
+
         // Vérification du mot de passe
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
@@ -68,6 +72,7 @@ const userLogin = async (req, res) => {
             phone: user.phone,
             city: user.city,
             email: user.email,
+            role: user.role
         };
 
         res.status(201).json({

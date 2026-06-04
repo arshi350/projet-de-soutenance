@@ -103,6 +103,29 @@ const EventManagement = () => {
     return emojis[index];
   };
 
+  // Fonction pour récupérer l'URL de l'image de l'événement
+  const getEventImageUrl = (event) => {
+    if (!event) return null;
+
+    // Récupérer le chemin de l'image depuis le champ image
+    const imagePath = event.image;
+
+    if (!imagePath) return null;
+
+    // Si c'est déjà une URL complète (commence par http), la retourner telle quelle
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+
+    // Si c'est un chemin relatif (commence par /), construire l'URL complète
+    if (imagePath.startsWith('/')) {
+      return `http://localhost:3000${imagePath}`;
+    }
+
+    // Sinon, essayer de construire l'URL complète
+    return `http://localhost:3000/uploads/${imagePath}`;
+  };
+
   // Fonction pour gérer la suppression
   const handleDeleteClick = (eventId) => {
     setShowDeleteConfirm(eventId);
@@ -149,7 +172,7 @@ const EventManagement = () => {
       return 'Actif';
     }
     if (statusLower === statusLower === 'terminé') {
-      return 'Passé';
+      return 'Passé'; 
     }
     if (statusLower === 'en attente') {
       return 'En attente';
@@ -160,11 +183,11 @@ const EventManagement = () => {
   // Fonction pour obtenir les couleurs du statut
   const getStatusColor = (status) => {
     const statusLower = (status || '').toLowerCase();
-    if (statusLower === 'active' || statusLower === 'ongoing' || statusLower === 'activé') {
+    if (statusLower === 'en cours' || statusLower === 'ongoing' || statusLower === 'activé') {
       return { bg: 'bg-green-100', text: 'text-green-600', dot: 'bg-green-500' };
     }
-    if (statusLower === 'past' || statusLower === 'completed' || statusLower === 'terminé') {
-      return { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-500' };
+    if (statusLower === 'terminer' || statusLower === 'completed' || statusLower === 'terminé') {
+      return { bg: 'bg-red-100', text: 'text-red-400', dot: 'bg-red-300' };
     }
     if (statusLower === 'pending' || statusLower === 'en attente' || statusLower === 'draft' || statusLower === 'drafts') {
       return { bg: 'bg-amber-100', text: 'text-amber-600', dot: 'bg-amber-500' };
@@ -295,32 +318,43 @@ const EventManagement = () => {
           const eventDate = formatDate(event.date || event.startDate || event.scheduledDate);
           const eventAvatar = getEventAvatar(event);
           const randomEmoji = getRandomEmoji(eventTitle);
+          const eventImageUrl = getEventImageUrl(event);
           
           return (
             <div key={event.id || event._id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-300 group">
-              {/* Avatar Section avec gradient */}
-              <div className={`relative h-56 bg-gradient-to-br ${eventAvatar.bgGradient} overflow-hidden flex items-center justify-center`}>
-                {/* Pattern de fond décoratif */}
-                <div className="absolute inset-0 opacity-10">
-                  <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-16 -translate-y-16"></div>
-                  <div className="absolute bottom-0 right-0 w-40 h-40 bg-white rounded-full translate-x-20 translate-y-20"></div>
-                  <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 opacity-30"></div>
-                </div>
-                
-                {/* Avatar Central */}
-                <div className="relative z-10 flex flex-col items-center justify-center">
-                  <div className="bg-white/20 backdrop-blur-md rounded-full p-6 mb-3 shadow-xl border border-white/30">
-                    {React.cloneElement(eventAvatar.icon, { 
-                      className: `${eventAvatar.color} drop-shadow-lg`,
-                      size: 48 
-                    })}
-                  </div>
-                  <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
-                    <span className="text-2xl">{randomEmoji}</span>
-                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Événement</span>
-                  </div>
-                </div>
-                
+              {/* Avatar Section avec gradient ou image */}
+              <div className={`relative h-56 ${eventImageUrl ? 'bg-slate-100' : `bg-gradient-to-br ${eventAvatar.bgGradient}`} overflow-hidden flex items-center justify-center`}>
+                {eventImageUrl ? (
+                  <img
+                    src={eventImageUrl}
+                    alt={eventTitle || 'Image de l\'événement'}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <>
+                    {/* Pattern de fond décoratif */}
+                    <div className="absolute inset-0 opacity-10">
+                      <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-16 -translate-y-16"></div>
+                      <div className="absolute bottom-0 right-0 w-40 h-40 bg-white rounded-full translate-x-20 translate-y-20"></div>
+                      <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 opacity-30"></div>
+                    </div>
+
+                    {/* Avatar Central */}
+                    <div className="relative z-10 flex flex-col items-center justify-center">
+                      <div className="bg-white/20 backdrop-blur-md rounded-full p-6 mb-3 shadow-xl border border-white/30">
+                        {React.cloneElement(eventAvatar.icon, { 
+                          className: `${eventAvatar.color} drop-shadow-lg`,
+                          size: 48 
+                        })}
+                      </div>
+                      <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+                        <span className="text-2xl">{randomEmoji}</span>
+                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Événement</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 {/* Status Badge */}
                 <div className="absolute top-6 right-6 flex items-center gap-2 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full shadow-sm">
                   <div className={`w-2 h-2 rounded-full ${statusStyle.dot}`} />

@@ -8,6 +8,9 @@ const eventRouter = require('./routes/event');
 const InviteRouter = require('./routes/invites');
 const QrRouter = require('./routes/generateQrCode');
 const statsRouter = require('./routes/stats');
+const adminStatsRouter = require('./routes/adminStats');
+const geminiRouter = require('./routes/geminiRoutes');
+const templatesRouter = require('./routes/templates');
 const cors = require('cors');
 const { startStatusScheduler } = require('./services/eventStatusScheduler');
 
@@ -83,6 +86,9 @@ app.use("/api/invite", InviteRouter);
 app.use("/api/qrcode", QrRouter);
 app.use("/api/invitations", InvitationRouter);
 app.use("/api/user", statsRouter);
+app.use("/api", adminStatsRouter);
+app.use("/api/gemini", geminiRouter);
+app.use("/api/templates", templatesRouter);
 
 //connexion a la BD
 connecter(url, (error)=>{

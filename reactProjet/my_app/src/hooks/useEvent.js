@@ -114,7 +114,6 @@ export const useGetRecentEvents = (userId, token, limit = 5, autoFetch = true) =
   }, [autoFetch, userId, token, fetchRecentEvents]);
 
   return { recentEvents, loading, error, refetch: fetchRecentEvents };
-  console.log('recentEvents', recentEvents);
 };
 
 //HOOK POUR RÉCUPÉRER LES ÉVÉNEMENTS RÉCENTS de la bd

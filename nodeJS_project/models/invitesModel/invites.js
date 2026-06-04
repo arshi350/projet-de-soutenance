@@ -72,13 +72,13 @@ const inviteSchema = new mongoose.Schema({
 });
 
 
-// Validation personnalisée pour exiger au moins un des deux: téléphone ou email
-inviteSchema.pre('validate', function(next) {
+// Version alternative du middleware
+inviteSchema.pre('validate', function() {
     if (!this.telephone && !this.email) {
-        this.invalidate('telephone', 'Veuillez fournir au moins un numéro de téléphone ou une adresse email');
-        this.invalidate('email', 'Veuillez fournir au moins un numéro de téléphone ou une adresse email');
+        const error = new Error('Veuillez fournir au moins un numéro de téléphone ou une adresse email');
+        this.invalidate('telephone', error.message);
+        this.invalidate('email', error.message);
     }
-    next();
 });
 
 const Invites = mongoose.model('Invites', inviteSchema);

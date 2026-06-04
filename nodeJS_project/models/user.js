@@ -34,6 +34,20 @@ const userSchema = new mongoose.Schema({
         required: true,
         minlength: 8
     },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    },
+    suspended: {
+        type: Boolean,
+        default: false
+    },
+    suspensionReason: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     date:{
         type: Date,
         default: Date.now

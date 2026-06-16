@@ -1,10 +1,12 @@
 const express = require('express');
+const upload = require('../middleware/upload');
 const {
   addTemplate,
   getAllTemplates,
   getTemplateById,
   updateTemplate,
   deleteTemplate,
+  uploadImage,
 } = require('../controller/templates/templatesController');
 
 const templatesRouter = express.Router();
@@ -42,6 +44,9 @@ const templatesRouter = express.Router();
  *         description: Données manquantes ou invalides
  */
 templatesRouter.route('/addTemplate').post(addTemplate);
+
+// Endpoint pour uploader une image de template (multipart/form-data)
+templatesRouter.route('/uploadImage').post(upload.single('image'), uploadImage);
 
 /**
  * @swagger

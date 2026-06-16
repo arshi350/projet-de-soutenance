@@ -1,4 +1,5 @@
 const { eventModel } = require("../../models/eventModels/event");
+const { userModel } = require("../../models/user");
 const mongoose = require('mongoose')
 const path = require('path');
 
@@ -9,10 +10,10 @@ const AddEvent = async (req, res) => {
         const { titre, description, DateDebut, DateFin, heureDebut, heureFin, lieu, categorie, userId } = req.body;
         
         // L'image est dans req.file
-        let imagePath = null;
+        let imageFilename = null;
         if (req.file) {
-            // Stocker le chemin relatif pour l'accès web
-            imagePath = '/uploads/' + path.basename(req.file.path);
+            // Stocker uniquement le nom de fichier (sécurisé et simple)
+            imageFilename = req.file.filename;
         } else {
             console.log('⚠️ Aucune image reçue');
         }
@@ -49,7 +50,7 @@ const AddEvent = async (req, res) => {
             heureFin,
             lieu,
             categorie,
-            image: imagePath,
+            image: imageFilename,
             userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : undefined,
             EventCode: EventCode
         });
@@ -197,6 +198,29 @@ const getRecentvents = async (req, res) =>{
     }
 }
 
+// Récupérer tous les événements pour l'administration
+const getAllEventsForAdmin = async (req, res) => {
+    try {
+        const adminUser = await userModel.findById(req.userId);
 
+        if (!adminUser || adminUser.role !== 'admin') {
+            return res.status(403).json({ message: 'Accès interdit: rôle administrateur requis' });
+        }
 
-module.exports = { AddEvent, getAllEventByUser, deleteEvent, updateEvent, getRecentEventsByUser, getRecentvents };
+        const events = await eventModel.find().sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            message: 'Événements récupérés avec succès',
+            count: events.length,
+            events
+        });
+    } catch (error) {
+        console.error('Erreur lors de la récupération des événements admin :', error);
+        return res.status(500).json({
+            message: 'Erreur serveur lors de la récupération des événements',
+            error: error.message
+        });
+    }
+};
+
+module.exports = { AddEvent, getAllEventByUser, deleteEvent, updateEvent, getRecentEventsByUser, getRecentvents, getAllEventsForAdmin };

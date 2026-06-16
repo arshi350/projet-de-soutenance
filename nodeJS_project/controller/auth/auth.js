@@ -88,6 +88,7 @@ const userLogin = async (req, res) => {
 };
 
 // Contrôleur pour rafraîchir l'access token
+// Route dédiée pour rafraîchir le token (endpoint /refresh)
 const refreshAccessToken = (req, res) => {
     try {
         const refreshToken = req.cookies.refreshToken;
@@ -117,6 +118,39 @@ const refreshAccessToken = (req, res) => {
     }
 };
 
+// Middleware optionnel pour rafraîchir le token sur les routes protégées
+const optionalRefreshAccessToken = (req, res, next) => {
+    try {
+        const refreshToken = req.cookies.refreshToken;
+        // Si pas de refresh token, continuer quand même (le access token Bearer est peut-être encore valide)
+        if (!refreshToken) {
+            return next();
+        }
+        // Vérifier le refresh token
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+        const payload = { id: decoded.id };
+        // Générer un nouvel access token
+        const newAccessToken = jwt.sign(
+            payload,
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRE || '15m' }
+        );
+        // Mettre à jour le cookie accessToken
+        res.cookie('accessToken', newAccessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 15 * 60 * 1000 // 15 minutes
+        });
+        // Passer au middleware suivant
+        next();
+    } catch (error) {
+        console.log(error);
+        // En cas d'erreur, continuer quand même (l'access token Bearer peut suffire)
+        next();
+    }
+};
+
 
 // Déconnexion de l'utilisateur : suppression des cookies d'authentification
 const userLogout = async (req, res) => {
@@ -139,4 +173,4 @@ const userLogout = async (req, res) => {
 };
 
 
-module.exports = { userLogin, refreshAccessToken, userLogout };
+module.exports = { userLogin, refreshAccessToken, userLogout, optionalRefreshAccessToken };

@@ -104,3 +104,19 @@ export const updateEvent = async (eventId, eventData, token) => {
         throw error;
     }
 }
+
+//service pour récupérer tous les événements (admin)
+export const getAllEventsAdmin = async (token) => {
+    try {
+        const response = await axios.get(`${API_URL}/event/admin/getAllEvents`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error("erreur lors de la récupération de tous les événements:", error);
+        throw error;
+    }
+}

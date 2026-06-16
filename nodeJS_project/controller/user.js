@@ -151,7 +151,7 @@ const suspendUser = async (req, res) => {
         const user = await userModel.findByIdAndUpdate(
             id,
             { suspended: true, suspensionReason: reason },
-            { new: true }
+            { returnDocument: 'after' }
         )
 
         if (!user) {
@@ -176,7 +176,7 @@ const unsuspendUser = async (req, res) => {
         const user = await userModel.findByIdAndUpdate(
             id,
             { suspended: false, suspensionReason: '' },
-            { new: true }
+            { returnDocument: 'after' }
         )
 
         if (!user) {

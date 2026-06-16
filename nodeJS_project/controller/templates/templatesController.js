@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 //fonction pour ajouter un template
 async function addTemplate(req, res) {
   try {
-    const { image, titre, description } = req.body;
+    const { image, titre, description, categorie } = req.body;
 
     if (!image || !titre || !description) {
       return res.status(400).json({
@@ -12,7 +12,7 @@ async function addTemplate(req, res) {
       });
     }
 
-    const template = new Template({ image, titre, description });
+    const template = new Template({ image, titre, description, categorie });
     await template.save();
 
     res.status(201).json({
@@ -57,12 +57,12 @@ async function getTemplateById(req, res) {
 async function updateTemplate(req, res) {
   try {
     const { id } = req.params;
-    const { image, titre, description } = req.body;
+    const { image, titre, description, categorie } = req.body;
 
     const updatedTemplate = await Template.findByIdAndUpdate(
       id,
-      { image, titre, description },
-      { new: true, runValidators: true }
+      { image, titre, description, categorie },
+      { returnDocument: 'after', runValidators: true }
     );
 
     if (!updatedTemplate) {
@@ -100,3 +100,21 @@ module.exports = {
   updateTemplate,
   deleteTemplate,
 };
+
+// Upload image handler (pour réceptionner un fichier via multipart/form-data)
+async function uploadImage(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Aucun fichier reçu.' });
+    }
+
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    return res.status(201).json({ message: 'Fichier uploadé avec succès', url: fileUrl });
+  } catch (error) {
+    console.error('Erreur uploadImage:', error);
+    return res.status(500).json({ message: 'Erreur serveur lors de l\'upload du fichier.' });
+  }
+}
+
+// ré-exporter uploadImage
+module.exports.uploadImage = uploadImage;

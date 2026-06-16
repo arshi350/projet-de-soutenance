@@ -1,6 +1,7 @@
 const express = require('express');
 const eventRouter = express.Router()
-const {AddEvent, getAllEventByUser, deleteEvent, updateEvent, getRecentEventsByUser, getRecentvents} = require("../controller/events/event")
+const {AddEvent, getAllEventByUser, deleteEvent, updateEvent, getRecentEventsByUser, getRecentvents, getAllEventsForAdmin} = require("../controller/events/event")
+const { connectToEventByCode } = require("../controller/events/connectToEvent")
 const authenticateToken = require('../middleware/authmiddlewre');
 const upload = require("../middleware/upload")
 const verifyUserEvent = require("../middleware/verifyuser")
@@ -100,6 +101,54 @@ eventRouter.route("/getRecentEventsByUser/:id").get( getRecentEventsByUser)
  *         description: Liste des événements récents
  */
 eventRouter.route("/getRecentvents").get(getRecentvents)
+
+/**
+ * @swagger
+ * /api/event/connect:
+ *   post:
+ *     summary: Se connecter à un événement avec son code
+ *     tags: [Event]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               EventCode:
+ *                 type: string
+ *                 description: Code de l'événement
+ *             required:
+ *               - EventCode
+ *     responses:
+ *       200:
+ *         description: Événement trouvé
+ *       400:
+ *         description: Code manquant
+ *       404:
+ *         description: Événement introuvable
+ */
+eventRouter.route("/connect").post(connectToEventByCode)
+
+/**
+ * @swagger
+ * /api/event/admin/getAllEvents:
+ *   get:
+ *     summary: Récupérer tous les événements (admin)
+ *     tags: [Event]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste de tous les événements
+ *       401:
+ *         description: Non autorisé
+ *       403:
+ *         description: Accès interdit
+ *       500:
+ *         description: Erreur serveur
+ */
+eventRouter.route("/admin/getAllEvents").get(authenticateToken, getAllEventsForAdmin)
 
 /**
  * @swagger

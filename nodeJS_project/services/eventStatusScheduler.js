@@ -36,7 +36,7 @@ const updateAllEventsStatusAutomatically = async () => {
                     await eventModel.findByIdAndUpdate(
                         event._id,
                         { status: newStatus },
-                        { new: true }
+                        { returnDocument: 'after' }
                     );
                     updatedCount++;
                     console.log(`✅ Événement "${event.titre}" : ${event.status} -> ${newStatus}`);

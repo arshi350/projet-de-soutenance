@@ -27,9 +27,11 @@ async function testGeminiRoutes() {
         template,
         "Rends les couleurs plus chaleureuses avec des tons orangés"
       );
+      const modifiedTemplate = result.template || result;
       console.log('✅ Réponse reçue');
-      console.log('Nouvelles couleurs:', result.structure.couleurs);
-      console.log('Nouveau titre:', result.structure.contenu.titre);
+      console.log('Preview des modifications :', result.preview || 'Aucun aperçu');
+      console.log('Nouvelles couleurs:', modifiedTemplate.structure.couleurs);
+      console.log('Nouveau titre:', modifiedTemplate.structure.contenu.titre);
     } catch (err) {
       console.log('❌ Erreur:', err.message);
     }
@@ -67,6 +69,17 @@ async function testGeminiRoutes() {
         "Palette premium avec du doré et du bleu nuit"
       );
       console.log('✅ Nouvelles couleurs:', newColors);
+    } catch (err) {
+      console.log('❌ Erreur:', err.message);
+    }
+
+    // 7. Test salutation IA
+    console.log('\n🧪 TEST 5: Réponse de salutation');
+    try {
+      const greeting = await geminiTemplateService.generateGreetingResponse(
+        'Bonjour, peux-tu te présenter et m aider avec mon invitation ?'
+      );
+      console.log('✅ Réponse de salutation :', greeting);
     } catch (err) {
       console.log('❌ Erreur:', err.message);
     }

@@ -66,6 +66,10 @@ const app = express()
 
 // Appliquer CORS globalement
 app.use(cors(corsOptions));
+const path = require('path');
+
+// Servir les fichiers statiques uploadés (ex: /uploads/filename.jpg)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const port = process.env.PORT || 8000
 const url = process.env.MONGO_URI;
 

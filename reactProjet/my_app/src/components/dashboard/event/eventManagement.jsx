@@ -122,7 +122,7 @@ const EventManagement = () => {
       return `http://localhost:3000${imagePath}`;
     }
 
-    // Sinon, essayer de construire l'URL complète
+    // Sinon, essayer de construire l'URL complète (backend écoute sur le port 3000)
     return `http://localhost:3000/uploads/${imagePath}`;
   };
 

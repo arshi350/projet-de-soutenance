@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, Settings } from 'lucide-react'; 
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // Liste mise à jour selon l'image (Panel Admin)
 const navItemsList = [
@@ -10,14 +10,29 @@ const navItemsList = [
   { id:'', name: 'utilisateurs', key: 'utilisateurs' },
   { id:'', name: 'evenement', key: 'evenement' },
   { id:'', name: 'analytique', key: 'analytique' },
+  { id:'', name: 'Templates', key: 'templates' },
+  { id:'', name: "Abonnements", key: 'abonements' },
   { id:'', name: 'Paramètres', key: 'parametres' },
 ];
 
 const AdminHeader = ({ onSectionChange, onAvatarClick }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [tooltip, setTooltip] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [activeSection, setActiveSection] = useState('vue'); // Par défaut sur "Vue d'ensemble"
+
+  const getSectionFromPath = (pathname) => {
+    const segments = pathname.split('/').filter(Boolean);
+    if (segments.length === 0) return 'home';
+    if (segments.length === 1 && segments[0] === 'admin') return 'vue';
+    return segments[1] || 'vue';
+  };
+
+  const [activeSection, setActiveSection] = useState(getSectionFromPath(location.pathname));
+
+  useEffect(() => {
+    setActiveSection(getSectionFromPath(location.pathname));
+  }, [location.pathname]);
 
   const handleNavClick = (item) => {
     if (item.key === 'home') {
@@ -32,7 +47,7 @@ const AdminHeader = ({ onSectionChange, onAvatarClick }) => {
     }
   };
 
-  // Variants d'animation
+  // Variants d'animation 672694138
   const navItemVariants = {
     initial: { opacity: 0, y: -10 },
     animate: { opacity: 1, y: 0 },
@@ -65,7 +80,7 @@ const AdminHeader = ({ onSectionChange, onAvatarClick }) => {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-      className="flex items-center justify-between px-8 py-3 bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50 w-full"
+      className="flex font items-center justify-between px-8 py-3 bg-white border-b border-gray-100 shadow-sm sticky top-0 z-50 w-full"
     >
       {/* Logo Section */}
       <motion.div
@@ -108,15 +123,6 @@ const AdminHeader = ({ onSectionChange, onAvatarClick }) => {
             </span>
             
             {/* Indicateur actif bleu sous l'élément comme sur la maquette */}
-            {activeSection === item.key && (
-              <motion.div
-                layoutId="activeNavIndicator"
-                className="absolute bottom-0 left-0 w-full h-0.5 bg-[#0066FF] rounded-full" // Changé en bleu pour matcher l'image
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
-              />
-            )}
           </motion.div>
         ))}
       </nav>

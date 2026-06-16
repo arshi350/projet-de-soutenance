@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { addEvent, getUserEvents, getRecentEvents, getRecentEvent, deleteEvent, updateEvent } from '../services/eventService';
+import { addEvent, getUserEvents, getRecentEvents, getRecentEvent, deleteEvent, updateEvent, getAllEventsAdmin } from '../services/eventService';
 
 //hook ajouter un événement
 export const useAddEvent = () => {
@@ -75,6 +75,44 @@ export const useGetUserEvents = (userId, token, autoFetch = true) => {
   }, [autoFetch, userId, token, fetchEvents]);
 
   return { events, loading, error, total, refetch: fetchEvents };
+};
+
+//HOOK POUR RÉCUPÉRER TOUS LES ÉVÉNEMENTS (ADMIN)
+export const useGetAllEventsAdmin = (token, autoFetch = true) => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [total, setTotal] = useState(0);
+
+  const fetchAllEvents = useCallback(async () => {
+    if (!token) {
+      setError('Utilisateur non authentifié');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await getAllEventsAdmin(token);
+      const eventsData = response.events || response.data || response;
+      setEvents(Array.isArray(eventsData) ? eventsData : []);
+      setTotal(eventsData?.length || response.count || 0);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Erreur de chargement';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (autoFetch && token) {
+      fetchAllEvents();
+    }
+  }, [autoFetch, token, fetchAllEvents]);
+
+  return { events, loading, error, total, refetch: fetchAllEvents };
 };
 
 

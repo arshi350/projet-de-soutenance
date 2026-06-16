@@ -1,7 +1,7 @@
 
 const express = require('express');
 const { addUser, addAdmin, getAllUsers, getOneUser, updateUser, deleteUser, suspendUser, unsuspendUser } = require('../controller/user');
-const { refreshAccessToken } = require('../controller/auth/auth');
+const { optionalRefreshAccessToken } = require('../controller/auth/auth');
 const authenticateToken = require('../middleware/authmiddlewre');
 const userRouter = express.Router();
 
@@ -79,7 +79,7 @@ userRouter.route("/addAdmin").post(addAdmin);
  *       200:
  *         description: Liste des utilisateurs
  */
-userRouter.route("/getAllUsers").get(authenticateToken, refreshAccessToken, getAllUsers);
+userRouter.route("/getAllUsers").get(authenticateToken, optionalRefreshAccessToken, getAllUsers);
 
 /**
  * @swagger
@@ -102,7 +102,7 @@ userRouter.route("/getAllUsers").get(authenticateToken, refreshAccessToken, getA
  *       404:
  *         description: Utilisateur non trouvé
  */
-userRouter.route("/getOneUser/:id").get(authenticateToken, refreshAccessToken, getOneUser);
+userRouter.route("/getOneUser/:id").get(authenticateToken, optionalRefreshAccessToken, getOneUser);
 
 /**
  * @swagger
@@ -128,7 +128,7 @@ userRouter.route("/getOneUser/:id").get(authenticateToken, refreshAccessToken, g
  *       200:
  *         description: Utilisateur mis à jour
  */
-userRouter.route("/updateUser/:id").put(authenticateToken, refreshAccessToken, updateUser);
+userRouter.route("/updateUser/:id").put(authenticateToken, optionalRefreshAccessToken, updateUser);
 
 /**
  * @swagger
@@ -148,7 +148,7 @@ userRouter.route("/updateUser/:id").put(authenticateToken, refreshAccessToken, u
  *       200:
  *         description: Utilisateur supprimé
  */
-userRouter.route("/deleteUser/:id").delete(authenticateToken, refreshAccessToken, deleteUser);
+userRouter.route("/deleteUser/:id").delete(authenticateToken, optionalRefreshAccessToken, deleteUser);
 
 /**
  * @swagger
@@ -181,7 +181,7 @@ userRouter.route("/deleteUser/:id").delete(authenticateToken, refreshAccessToken
  *       404:
  *         description: Utilisateur non trouvé
  */
-userRouter.route("/suspendUser/:id").put(authenticateToken, refreshAccessToken, suspendUser);
+userRouter.route("/suspendUser/:id").put(authenticateToken, optionalRefreshAccessToken, suspendUser);
 
 /**
  * @swagger
@@ -204,6 +204,6 @@ userRouter.route("/suspendUser/:id").put(authenticateToken, refreshAccessToken, 
  *       404:
  *         description: Utilisateur non trouvé
  */
-userRouter.route("/unsuspendUser/:id").put(authenticateToken, refreshAccessToken, unsuspendUser);
+userRouter.route("/unsuspendUser/:id").put(authenticateToken, optionalRefreshAccessToken, unsuspendUser);
 
 module.exports = userRouter;

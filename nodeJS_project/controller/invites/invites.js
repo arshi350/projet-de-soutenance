@@ -111,7 +111,7 @@ const updateInvite = async (req, res) => {
             updateFields.status = status;
         }
 
-        const updated = await Invites.findByIdAndUpdate(id, updateFields, { new: true, runValidators: true });
+        const updated = await Invites.findByIdAndUpdate(id, updateFields, { returnDocument: 'after', runValidators: true });
         if (!updated) {
             return res.status(404).json({ message: "Invité non trouvé" });
         }

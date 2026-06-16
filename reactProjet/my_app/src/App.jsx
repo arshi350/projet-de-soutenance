@@ -9,6 +9,8 @@ import AdminOverview from './components/admin/pages/AdminOverview';
 import AdminUsers from './components/admin/pages/AdminUsers';
 import AdminEvents from './components/admin/pages/AdminEvents';
 import AdminAnalytics from './components/admin/pages/AdminAnalytics';
+import Templates from './components/admin/pages/Templates';
+import Abonements from './components/admin/pages/Abonements';
 import AdminSettings from './components/admin/pages/AdminSettings';
 import ProtectedRoute from './routes/protectedRoute';
 // import ManageEvent from './components/dashboard/event/manageEvent/ManageEvent';
@@ -37,6 +39,8 @@ function App() {
                 <Route path="utilisateurs" element={<AdminUsers />} />
                 <Route path="evenement" element={<AdminEvents />} />
                 <Route path="analytique" element={<AdminAnalytics />} />
+                <Route path="templates" element={<Templates />} />
+                <Route path="abonements" element={<Abonements />} />
                 <Route path="parametres" element={<AdminSettings />} />
               </Route>
             </Route>

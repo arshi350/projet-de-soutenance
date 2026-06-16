@@ -52,7 +52,7 @@ const AdminOverview = () => {
   ], [stats]);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-55 py-8 text-slate-800 font-sans">
+    <div className="font min-h-screen bg-gray-100 px-55 py-8 text-slate-800 font-sans">
       <header className="mb-8">
         <h1 className="text-2xl font-bold">Tableau de bord</h1>
         <p className="text-gray-500 text-sm">Vue d'ensemble de la plateforme</p>

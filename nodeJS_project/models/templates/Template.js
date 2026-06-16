@@ -16,6 +16,15 @@ const templateSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  categorie: {
+    type: String,
+    enum: ['vip', 'classique'],
+    default: 'classique',
+  },
+  isNew:{
+    type: Boolean,
+    default: true
+  },
   // Structure avancée pour les modifications Gemini
   structure: {
     type: Object,

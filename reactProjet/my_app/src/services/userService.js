@@ -1,102 +1,95 @@
-import axios from 'axios';
-
-const API_URL = 'http://localhost:3000/api'; 
-
-// Prépare les en-têtes d'authentification pour les requêtes protégées
-const getAuthHeaders = (token) => ({
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
+import api from './api';
 
 // Crée un nouvel utilisateur via la route POST /api/addUser
 export const addUser = async (userData) => {
   try {
-    const response = await axios.post(`${API_URL}/addUser`, userData);
+    const response = await api.post('/addUser', userData);
     return response.data;
   } catch (error) {
     console.error("Erreur lors de l'ajout de l'utilisateur :", error);
-    throw error;
+    throw error.response?.data || error;
   }
 };
 
 // Crée un nouvel administrateur via la route POST /api/addAdmin
 export const addAdmin = async (adminData) => {
   try {
-    const response = await axios.post(`${API_URL}/addAdmin`, adminData);
+    const response = await api.post('/addAdmin', adminData);
     return response.data;
   } catch (error) {
     console.error("Erreur lors de l'ajout de l'administrateur :", error);
-    throw error;
+    throw error.response?.data || error;
   }
 };
 
 // Récupère tous les utilisateurs via la route GET /api/getAllUsers
 export const getAllUsers = async (token) => {
   try {
-    const response = await axios.get(`${API_URL}/getAllUsers`, getAuthHeaders(token));
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    const response = await api.get('/getAllUsers', config);
     return response.data;
   } catch (error) {
     console.error("Erreur lors de la récupération des utilisateurs :", error);
-    throw error;
+    throw error.response?.data || error;
   }
 };
 
 // Récupère les informations d'un utilisateur par ID via GET /api/getOneUser/:id
 export const getOneUser = async (userId, token) => {
   try {
-    const response = await axios.get(`${API_URL}/getOneUser/${userId}`, getAuthHeaders(token));
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    const response = await api.get(`/getOneUser/${userId}`, config);
     return response.data;
   } catch (error) {
     console.error("Erreur lors de la récupération de l'utilisateur :", error);
-    throw error;
+    throw error.response?.data || error;
   }
 };
 
 // Met à jour un utilisateur via PUT /api/updateUser/:id
 export const updateUser = async (userId, userData, token) => {
   try {
-    const response = await axios.put(`${API_URL}/updateUser/${userId}`, userData, getAuthHeaders(token));
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    const response = await api.put(`/updateUser/${userId}`, userData, config);
     return response.data;
   } catch (error) {
     console.error("Erreur lors de la mise à jour de l'utilisateur :", error);
-    throw error;
+    throw error.response?.data || error;
   }
 };
 
 // Supprime un utilisateur via DELETE /api/deleteUser/:id
 export const deleteUser = async (userId, token) => {
   try {
-    const response = await axios.delete(`${API_URL}/deleteUser/${userId}`, getAuthHeaders(token));
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    const response = await api.delete(`/deleteUser/${userId}`, config);
     return response.data;
   } catch (error) {
     console.error("Erreur lors de la suppression de l'utilisateur :", error);
-    throw error;
+    throw error.response?.data || error;
   }
 };
 
 // Suspend un utilisateur via PUT /api/suspendUser/:id avec une raison optionnelle
 export const suspendUser = async (userId, token, reason = '') => {
   try {
-    const response = await axios.put(
-      `${API_URL}/suspendUser/${userId}`,
-      { reason },
-      getAuthHeaders(token)
-    );
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    const response = await api.put(`/suspendUser/${userId}`, { reason }, config);
     return response.data;
   } catch (error) {
     console.error("Erreur lors de la suspension de l'utilisateur :", error);
-    throw error;
+    throw error.response?.data || error;
   }
 };
 
 // Rétablit un utilisateur suspendu via PUT /api/unsuspendUser/:id
 export const unsuspendUser = async (userId, token) => {
   try {
-    const response = await axios.put(`${API_URL}/unsuspendUser/${userId}`, null, getAuthHeaders(token));
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    const response = await api.put(`/unsuspendUser/${userId}`, null, config);
     return response.data;
   } catch (error) {
     console.error("Erreur lors de la réactivation de l'utilisateur :", error);
-    throw error;
+    throw error.response?.data || error;
   }
 };

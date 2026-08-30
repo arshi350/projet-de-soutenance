@@ -1,149 +1,196 @@
-import React from 'react';
-import { History, Scan, Calendar, MapPin, Users, Info, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { History, QrCode, Calendar, MapPin, Users, Info, ShieldCheck, AlertCircle, ArrowRight, Sparkles, Megaphone, CheckCircle2 } from 'lucide-react';
+import axios from 'axios';
+import { useAuthContext } from '../../../../../context/AuthContext';
 
-export default function EventActivityAndActions() {
-  // Données de l'activité récente
-  const activities = [
-    {
-      id: 1,
-      name: 'Jean Dupont',
-      status: 'Arrivée enregistrée',
-      location: 'Entrée Nord',
-      time: '20:45',
-      type: 'success', // Vert
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80', // Exemple d'avatar réaliste
-      bgColor: 'bg-blue-50/40',
-      borderColor: 'border-blue-100'
-    },
-    {
-      id: 2,
-      name: 'Marie Curie',
-      status: 'Arrivée enregistrée',
-      location: 'VIP Lounge',
-      time: '20:42',
-      type: 'success', // Vert
-      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
-      bgColor: 'bg-white',
-      borderColor: 'border-orange-100'
-    },
-    {
-      id: 3,
-      name: 'Thomas Pesquet',
-      status: 'Absence signalée',
-      location: 'Empêchement',
-      time: '20:38',
-      type: 'danger', // Rouge
-      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop&q=80',
-      bgColor: 'bg-white',
-      borderColor: 'border-red-100'
-    }
-  ];
+const API_BASE = 'http://localhost:3000/api';
+
+const formatDate = (value) => {
+  if (!value) return 'À l’instant';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: 'short'
+  }).format(date);
+};
+
+export default function EventActivityAndActions({ eventInfo }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { eventId: routeEventId } = useParams();
+  const eventId = eventInfo?._id || eventInfo?.id || routeEventId;
+  const { token } = useAuthContext();
+  const isPublic = eventInfo?.eventType === 'public';
+
+  const [scanStats, setScanStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecentScans = async () => {
+      if (!eventId) return;
+      try {
+        setLoading(true);
+        const res = await axios.get(`${API_BASE}/scan/stats/${eventId}`);
+        if (res.data.success) {
+          setScanStats(res.data);
+        }
+      } catch (err) {
+        console.warn("Erreur scans récents :", err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentScans();
+    const interval = setInterval(fetchRecentScans, 15000);
+    return () => clearInterval(interval);
+  }, [eventId]);
+
+  const recentScans = scanStats?.recentScans || [];
+
+  const handleVoirTout = () => {
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', 'invites');
+    setSearchParams(params, { replace: true });
+  };
 
   return (
-    <div className="px-60 p-6 font grid grid-cols-1 lg:grid-cols-3 gap-6 font-sans">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 font-sans grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
       
-      {/* --- BLOC GAUCHE : ACTIVITÉ RÉCENTE (Prend 2 colonnes) --- */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 lg:col-span-2 flex flex-col justify-between">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <History className="w-5 h-5 text-[#FF5005]" />
-            <h3 className="text-base font-bold text-gray-800">Activité récente</h3>
-          </div>
-          <button className="text-xs font-semibold text-[#017EF7] hover:underline">
-            Voir tout
-          </button>
-        </div>
-
-        {/* Liste des activités */}
-        <div className="space-y-3">
-          {activities.map((item) => (
-            <div
-              key={item.id}
-              className={`flex items-center justify-between p-4 rounded-xl border ${item.borderColor} ${item.bgColor} transition-all hover:shadow-sm`}
-            >
-              {/* Infos Utilisateur (Avatar + Texte) */}
-              <div className="flex items-center gap-3">
-                <img
-                  src={item.avatar}
-                  alt={item.name}
-                  className="w-10 h-10 rounded-full object-cover border border-gray-100"
-                />
-                <div className="space-y-0.5">
-                  <h4 className="text-sm font-bold text-gray-800">{item.name}</h4>
-                  <p className="text-xs text-gray-500">
-                    <span className="font-medium">{item.status}</span>
-                    <span className="mx-1.5 text-gray-300">•</span>
-                    <span className="text-gray-400">{item.location}</span>
-                  </p>
-                </div>
+      {/* Journal des Scans d'Entrée en Temps Réel (2 cols) */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xs border border-gray-200/80 lg:col-span-2 flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-orange-50 text-[#FF5005] flex items-center justify-center">
+                <History className="w-5 h-5" />
               </div>
-
-              {/* Heure et Point d'état */}
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-gray-400">{item.time}</span>
-                <span className={`w-2 h-2 rounded-full shrink-0 ${
-                  item.type === 'success' ? 'bg-[#10B981]' : 'bg-[#EF4444]'
-                }`} />
+              <div>
+                <h3 className="text-base font-extrabold text-gray-900">Scans & Contrôles d'Accès Récent</h3>
+                <p className="text-xs text-gray-400">Journal en direct des billets validés aux portiques</p>
               </div>
             </div>
-          ))}
+            <button onClick={handleVoirTout} className="text-xs font-bold text-[#FF5005] hover:underline cursor-pointer">
+              Voir tous les invités
+            </button>
+          </div>
+
+          {loading && recentScans.length === 0 ? (
+            <div className="py-12 text-center text-xs text-gray-400">Synchronisation des entrées en direct...</div>
+          ) : recentScans.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 p-8 text-center text-xs text-gray-400">
+              Aucun scan enregistré pour le moment. Lancez l'application mobile pour débuter le contrôle.
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {recentScans.map((scan) => (
+                <div
+                  key={scan.id}
+                  className="flex items-center justify-between p-3.5 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#FF5005] font-black text-xs flex items-center justify-center">
+                      {scan.name ? scan.name.slice(0, 2).toUpperCase() : 'OK'}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-xs text-gray-900">{scan.name}</h4>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                        <span className="font-mono">{scan.ticketNumber}</span>
+                        <span>•</span>
+                        <span className="font-semibold text-[#FF5005]">{scan.category}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md uppercase">
+                      <ShieldCheck className="w-3 h-3" /> Validé
+                    </span>
+                    <span className="block text-[10px] text-gray-400 mt-0.5">{formatDate(scan.scannedAt)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* --- BLOC DROIT : ACTIONS ET DÉTAILS (Prend 1 colonne) --- */}
-      <div className="space-y-6 flex flex-col justify-between">
-        
-        {/* Action : Gérer l'accès */}
-        <div className="bg-[#FF5005] rounded-2xl p-6 shadow-md text-white relative overflow-hidden group">
-          <div className="space-y-2 mb-6 max-w-[85%]">
-            <h3 className="text-lg font-bold tracking-tight">Gérer l'accès</h3>
-            <p className="text-xs text-orange-100 leading-relaxed opacity-90">
-              Utilisez le scanner mobile pour valider rapidement les entrées à la porte.
-            </p>
-          </div>
+      {/* Raccourcis Rapides & Copilote (1 col) */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xs border border-gray-200/80 space-y-5 flex flex-col justify-between">
+        <div className="space-y-4">
+          <h3 className="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3">
+            Outils & Actions Rapides
+          </h3>
 
-          {/* Bouton Scanner imbriqué avec bouton "+" flottant */}
-          <div className="relative flex items-center">
-            <button className="w-full bg-white text-gray-800 text-xs font-bold py-3.5 px-4 rounded-xl shadow-sm hover:bg-orange-50 transition-all flex items-center justify-center gap-2">
-              <Scan className="w-4 h-4 text-[#FF5005]" />
-              <span>Scanner un ticket</span>
+          {/* Bouton Marketing IA - Uniquement pour les événements publics */}
+          {isPublic && (
+            <button
+              type="button"
+              onClick={() => {
+                const params = new URLSearchParams(searchParams);
+                params.set('tab', 'marketing');
+                setSearchParams(params, { replace: true });
+              }}
+              className="w-full p-4 rounded-2xl bg-gradient-to-r from-[#0B1727] to-[#1A2C4B] hover:opacity-95 text-white font-bold text-xs shadow-md flex items-center justify-between transition cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <Megaphone className="w-4 h-4 text-[#FF5005]" />
+                <span>Générateur Marketing IA</span>
+              </div>
+              <span className="text-[10px] bg-[#FF5005] px-2 py-0.5 rounded-md text-white font-bold flex items-center gap-1">
+                <span>Gemini</span>
+                <Sparkles size={11} />
+              </span>
             </button>
-            
-            {/* Petit bouton "+" flottant à l'extrémité droite */}
-            <button className="absolute -right-2 bg-[#FF5005] border-2 border-white text-white p-2 rounded-full shadow-md hover:scale-105 transition-transform">
-              <Plus className="w-4 h-4 stroke-[3]" />
-            </button>
+          )}
+
+          <div className="p-4 bg-gray-50 border border-gray-200/80 rounded-2xl space-y-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2 font-bold text-gray-900">
+              <QrCode className="w-4 h-4 text-[#FF5005]" />
+              <span>Application Mobile de Scan</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-gray-500">
+              Synchronisez vos contrôleurs d'accès avec l'app <strong>mobileAppScann</strong>.
+            </p>
+            <div className="pt-2 border-t border-gray-200/60">
+              <span className="text-[9px] font-bold uppercase text-gray-400 block">Code Événement :</span>
+              <span className="text-sm font-black text-gray-900 font-mono tracking-wider">{eventInfo?.EventCode || 'ARSHI2026'}</span>
+            </div>
           </div>
         </div>
 
-        {/* Info Widget : Détails de l'événement */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-orange-100/60 space-y-4">
-          
-          {/* Titre de section */}
-          <div className="flex items-center gap-2 text-gray-700 text-sm font-bold pb-2 border-b border-gray-50">
-            <Info className="w-4 h-4 text-[#017EF7]" />
-            <span>Détails de l'événement</span>
-          </div>
-
-          {/* Liste des détails */}
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-3 text-xs font-medium text-gray-600">
-              <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-              <span>12 Octobre 2025</span>
-            </div>
-
-            <div className="flex items-center gap-3 text-xs font-medium text-gray-600">
-              <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
-              <span>Parc des Expositions, Paris</span>
-            </div>
-
-            <div className="flex items-center gap-3 text-xs font-medium text-gray-600">
-              <Users className="w-4 h-4 text-gray-400 shrink-0" />
-              <span>Capacité max: 500</span>
-            </div>
-          </div>
-
+        <div className="pt-2">
+          {eventInfo?.eventType === 'public' ? (
+            <button
+              type="button"
+              onClick={() => {
+                const params = new URLSearchParams(searchParams);
+                params.set('tab', 'billetterie');
+                setSearchParams(params, { replace: true });
+              }}
+              className="w-full py-3 bg-[#FF5005] hover:bg-[#ff6220] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition shadow-md shadow-orange-500/20 cursor-pointer"
+            >
+              <span>Billetterie Publique</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const params = new URLSearchParams(searchParams);
+                params.set('tab', 'invites');
+                setSearchParams(params, { replace: true });
+              }}
+              className="w-full py-3 bg-[#0B1727] hover:bg-black text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition shadow-sm cursor-pointer"
+            >
+              <span>Gérer les Invités & RSVP</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
       </div>

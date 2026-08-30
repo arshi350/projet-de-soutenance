@@ -1,8 +1,9 @@
-// AuthContext.js
+// AuthContext.jsx
 // Fournit un contexte global pour l'authentification dans l'application React
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   loginService,
+  googleLoginService,
   logoutService,
   refreshTokenService,
   getCurrentUser,
@@ -19,9 +20,8 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
 
-  // Définir handleRefreshToken AVANT les useEffect qui l'utilisent
+  // Rafraîchissement explicite du token
   const handleRefreshToken = useCallback(async () => {
-    setLoading(true);
     try {
       const newToken = await refreshTokenService();
       setToken(newToken);
@@ -32,9 +32,34 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       setToken(null);
       throw err;
-    } finally {
-      setLoading(false);
     }
+  }, []);
+
+  // Écoute des événements de synchronisation déclenchés par l'intercepteur Axios (api.js)
+  useEffect(() => {
+    const handleTokenRefreshed = (event) => {
+      if (event.detail?.token) {
+        setToken(event.detail.token);
+        setIsAuthenticated(true);
+      }
+      if (event.detail?.user) {
+        setUser(event.detail.user);
+      }
+    };
+
+    const handleSessionExpired = () => {
+      setUser(null);
+      setToken(null);
+      setIsAuthenticated(false);
+    };
+
+    window.addEventListener('auth:token-refreshed', handleTokenRefreshed);
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+
+    return () => {
+      window.removeEventListener('auth:token-refreshed', handleTokenRefreshed);
+      window.removeEventListener('auth:session-expired', handleSessionExpired);
+    };
   }, []);
 
   // Connexion utilisateur
@@ -49,6 +74,25 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: data.user };
     } catch (err) {
       setError(err.message || 'Erreur lors de la connexion');
+      setIsAuthenticated(false);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Connexion Google OAuth
+  const googleLogin = useCallback(async (credentialToken) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await googleLoginService(credentialToken);
+      setUser(data.user);
+      setToken(data.accessToken);
+      setIsAuthenticated(true);
+      return { success: true, user: data.user };
+    } catch (err) {
+      setError(err.message || 'Erreur lors de la connexion Google');
       setIsAuthenticated(false);
       return { success: false, error: err.message };
     } finally {
@@ -76,34 +120,20 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
-  // Vérification initiale du token (après la définition des fonctions)
+  // Vérification initiale du token au montage
   useEffect(() => {
     const checkToken = async () => {
       if (token && !isTokenValid()) {
         try {
           await handleRefreshToken();
         } catch (err) {
-          console.error('Erreur lors du rafraîchissement initial du token:', err);
+          console.warn('Refresh initial automatique non effectué:', err);
         }
       }
     };
     
     checkToken();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Ne dépend que du token initial
-
-  // Rafraîchit automatiquement le token toutes les 14 minutes si connecté
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    
-    const interval = setInterval(() => {
-      handleRefreshToken().catch(err => {
-        console.error('Erreur lors du rafraîchissement automatique du token:', err);
-      });
-    }, 14 * 60 * 1000); // 14 minutes
-    
-    return () => clearInterval(interval);
-  }, [isAuthenticated, handleRefreshToken]);
+  }, [handleRefreshToken, token]);
 
   return (
     <AuthContext.Provider value={{
@@ -113,6 +143,7 @@ export const AuthProvider = ({ children }) => {
       loading,
       error,
       login,
+      googleLogin,
       logout,
       updateUser,
       refreshToken: handleRefreshToken

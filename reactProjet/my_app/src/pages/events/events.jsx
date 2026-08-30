@@ -4,27 +4,38 @@ import EventHeader from '../../components/dashboard/event/manageEvent/event_head
 import Overview from './eventPages/Overview';
 import Invites from './eventPages/Invites';
 import Invitations from './eventPages/Invitations';
-import QRCodes from './eventPages/QRCodes';
-import Templates from './eventPages/Templates';
 import Parametres from './eventPages/Parametres';
 import { useGetUserEvents } from '../../hooks/useEvent';
 import { useAuthContext } from '../../context/AuthContext';
-import { Personnalisation } from './eventPages/personnalisation';
+import TicketDesignerTab from './eventPages/TicketDesignerTab';
+import MarketingCampaigns from './eventPages/MarketingCampaigns';
+import PollsTab from './eventPages/PollsTab';
+import RemindersTab from './eventPages/RemindersTab';
+import FeedbackTab from './eventPages/FeedbackTab';
+import SalesAnalyticsTab from './eventPages/SalesAnalyticsTab';
 
-const tabs = [
+// Onglets pour événements privés
+const PRIVATE_TABS = [
   { id: 'overview', label: "Vue d'ensemble" },
   { id: 'invites', label: 'Invités' },
   { id: 'invitations', label: 'Invitations' },
-  { id: 'qrcodes', label: 'QR Codes' },
-  { id: 'templates', label: 'Templates' },
-  { id: 'personalisations', label: 'Personnalisation' },
-  { id: 'parametres', label: 'Paramètres' }
+  { id: 'polls', label: 'Sondages Pré-Événement' },
+  { id: 'reminders', label: 'Relances IA' },
+  { id: 'feedback', label: 'Feedback Post-Event' },
+  { id: 'parametres', label: 'Paramètres' },
 ];
 
-const getTabIdFromParam = (tabParam) => {
-  if (!tabParam) return 'overview';
-  return tabs.some((tab) => tab.id === tabParam) ? tabParam : 'overview';
-};
+// Onglets pour événements publics (avec billetterie et suivi des ventes)
+const PUBLIC_TABS = [
+  { id: 'overview', label: "Vue d'ensemble" },
+  { id: 'ventes', label: 'Ventes & Revenus' },
+  { id: 'billetterie', label: 'Billetterie' },
+  { id: 'marketing', label: 'Campagnes Marketing IA' },
+  { id: 'invites', label: 'Participants / Billets' },
+  { id: 'polls', label: 'Sondages Pré-Événement' },
+  { id: 'feedback', label: 'Feedback & Avis IA' },
+  { id: 'parametres', label: 'Paramètres' },
+];
 
 export function EventsManage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,10 +44,17 @@ export function EventsManage() {
   const { events, loading } = useGetUserEvents(user?._id || user?.id, token, true);
   const [eventInfo, setEventInfo] = useState(null);
 
-  const activeTabId = useMemo(
-    () => getTabIdFromParam(searchParams.get('tab')),
-    [searchParams]
-  );
+  const isPublic = eventInfo?.eventType === 'public';
+
+  const tabs = useMemo(() => {
+    return isPublic ? PUBLIC_TABS : PRIVATE_TABS;
+  }, [isPublic]);
+
+  const activeTabId = useMemo(() => {
+    const tabParam = searchParams.get('tab');
+    if (!tabParam) return 'overview';
+    return tabs.some((tab) => tab.id === tabParam) ? tabParam : 'overview';
+  }, [searchParams, tabs]);
 
   useEffect(() => {
     if (!eventId) return;
@@ -70,16 +88,22 @@ export function EventsManage() {
     switch (activeTabId) {
       case 'overview':
         return <Overview eventInfo={eventInfo} />;
+      case 'ventes':
+        return <SalesAnalyticsTab eventInfo={eventInfo} />;
+      case 'marketing':
+        return <MarketingCampaigns eventInfo={eventInfo} />;
       case 'invites':
         return <Invites eventInfo={eventInfo} />;
+      case 'billetterie':
+        return <TicketDesignerTab eventInfo={eventInfo} />;
       case 'invitations':
         return <Invitations eventInfo={eventInfo} />;
-      case 'qrcodes':
-        return <QRCodes eventInfo={eventInfo} />;
-      case 'templates':
-        return <Templates eventInfo={eventInfo} />;
-        case 'personalisations':
-        return <Personnalisation eventInfo={eventInfo} />;
+      case 'polls':
+        return <PollsTab eventInfo={eventInfo} />;
+      case 'reminders':
+        return <RemindersTab eventInfo={eventInfo} />;
+      case 'feedback':
+        return <FeedbackTab eventInfo={eventInfo} />;
       case 'parametres':
         return <Parametres eventInfo={eventInfo} />;
       default:
@@ -102,4 +126,3 @@ export function EventsManage() {
     </div>
   );
 }
- 

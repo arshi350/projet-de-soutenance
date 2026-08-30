@@ -1,10 +1,17 @@
 const jwt = require('jsonwebtoken');
+const { getCookieOptions } = require('../controller/auth/auth');
 require('dotenv').config();
 
+/**
+ * Middleware d'authentification robuste
+ * Vérifie l'accessToken (via cookies ou Bearer Authorization Header)
+ * En cas d'expiration, tente un rafraîchissement transparent si le refreshToken est présent
+ */
 const authenticateToken = async (req, res, next) => {
     try {
         let token = null;
-        // Cherche d'abord dans les cookies
+
+        // 1. Cherche dans les cookies ou dans l'en-tête Authorization Bearer
         if (req.cookies && req.cookies.accessToken) {
             token = req.cookies.accessToken;
         } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
@@ -12,46 +19,83 @@ const authenticateToken = async (req, res, next) => {
         }
 
         if (!token) {
-            return res.status(401).json({ message: 'Token manquant' });
+            return res.status(401).json({ message: 'Token d\'accès manquant', code: 'TOKEN_MISSING' });
         }
 
         try {
             const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-            req.userId = decodedToken.id;
+            const userId = decodedToken.id || decodedToken._id || decodedToken.userId;
+
+            req.userId = userId;
+            req.user = {
+                id: userId,
+                _id: userId,
+                role: decodedToken.role,
+                email: decodedToken.email,
+                ...(typeof decodedToken === 'object' ? decodedToken : {})
+            };
             return next();
         } catch (err) {
-            // Si accessToken expiré, tente de rafraîchir avec refreshToken
-            if (err.name === 'TokenExpiredError' && req.cookies && req.cookies.refreshToken) {
+            // 2. Si accessToken expiré, vérifier s'il existe un refreshToken pour un renouvellement transparent
+            const refreshToken =
+                req.cookies?.refreshToken ||
+                req.headers['x-refresh-token'] ||
+                req.body?.refreshToken;
+
+            if (err.name === 'TokenExpiredError' && refreshToken) {
                 try {
-                    const decodedRefresh = jwt.verify(req.cookies.refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
-                    const payload = { id: decodedRefresh.id };
-                    // Génère un nouveau accessToken
+                    const decodedRefresh = jwt.verify(
+                        refreshToken,
+                        process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET
+                    );
+                    const refreshUserId = decodedRefresh.id || decodedRefresh._id || decodedRefresh.userId;
+
+                    const payload = {
+                        id: refreshUserId,
+                        role: decodedRefresh.role,
+                        email: decodedRefresh.email
+                    };
+
+                    // Générer un nouvel access token
                     const newAccessToken = jwt.sign(
                         payload,
                         process.env.JWT_SECRET,
                         { expiresIn: process.env.JWT_EXPIRE || '15m' }
                     );
-                    // Met à jour le cookie
-                    res.cookie('accessToken', newAccessToken, {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: 'strict',
-                        maxAge: 15 * 60 * 1000
-                    });
-                    req.userId = decodedRefresh.id;
+
+                    // Mettre à jour le cookie accessToken
+                    res.cookie('accessToken', newAccessToken, getCookieOptions(15 * 60 * 1000));
+
+                    // Exposer le nouveau token dans l'en-tête de réponse pour les clients SPA
+                    res.setHeader('X-New-Access-Token', newAccessToken);
+
+                    req.userId = refreshUserId;
+                    req.user = {
+                        id: refreshUserId,
+                        _id: refreshUserId,
+                        role: decodedRefresh.role,
+                        email: decodedRefresh.email,
+                        ...(typeof decodedRefresh === 'object' ? decodedRefresh : {})
+                    };
+
                     return next();
                 } catch (refreshErr) {
-                    console.log(refreshErr);
-                    return res.status(401).json({ message: 'Refresh token invalide ou expiré' });
+                    console.error("Échec du rafraîchissement transparent dans le middleware:", refreshErr.message);
+                    return res.status(401).json({
+                        message: 'Refresh token invalide ou expiré',
+                        code: 'REFRESH_TOKEN_EXPIRED'
+                    });
                 }
             } else {
-                console.log(err);
-                return res.status(401).json({ message: 'Token invalide ou expiré' });
+                return res.status(401).json({
+                    message: err.name === 'TokenExpiredError' ? 'Token expiré' : 'Token invalide',
+                    code: err.name === 'TokenExpiredError' ? 'TOKEN_EXPIRED' : 'TOKEN_INVALID'
+                });
             }
         }
     } catch (error) {
-        console.log(error);
-        res.status(401).json({ message: 'Erreur d\'authentification' });
+        console.error("Erreur générale dans authenticateToken:", error);
+        return res.status(401).json({ message: 'Erreur d\'authentification' });
     }
 };
 

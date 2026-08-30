@@ -1,10 +1,29 @@
 const express = require('express');
-const eventRouter = express.Router()
-const {AddEvent, getAllEventByUser, deleteEvent, updateEvent, getRecentEventsByUser, getRecentvents, getAllEventsForAdmin} = require("../controller/events/event")
-const { connectToEventByCode } = require("../controller/events/connectToEvent")
+const eventRouter = express.Router();
+const {
+    AddEvent, 
+    getAllEventByUser, 
+    deleteEvent, 
+    updateEvent, 
+    getEventById, 
+    getRecentEventsByUser, 
+    getRecentvents, 
+    getAllEventsForAdmin,
+    calculateEventQuote,
+    activateEvent,
+    upgradeEventQuota
+} = require("../controller/events/event");
+const { connectToEventByCode } = require("../controller/events/connectToEvent");
 const authenticateToken = require('../middleware/authmiddlewre');
-const upload = require("../middleware/upload")
-const verifyUserEvent = require("../middleware/verifyuser")
+const upload = require("../middleware/upload");
+const verifyUserEvent = require("../middleware/verifyuser");
+
+// Calcul de devis en temps réel (ouvert pour simulation / form)
+eventRouter.route("/quote").post(calculateEventQuote);
+
+// Activation et upgrade
+eventRouter.route("/:id/activate").post(authenticateToken, activateEvent);
+eventRouter.route("/:id/upgrade-quota").post(authenticateToken, upgradeEventQuota);
 
 /**
  * @swagger
@@ -194,5 +213,26 @@ eventRouter.route("/deleteEvent/:id").delete(authenticateToken, deleteEvent)
  *         description: Événement mis à jour
  */
 eventRouter.route("/updateEvent/:id").put(authenticateToken, updateEvent)
+
+/**
+ * @swagger
+ * /api/event/{id}:
+ *   get:
+ *     summary: Récupérer les détails d'un événement
+ *     tags: [Event]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de l'événement
+ *     responses:
+ *       200:
+ *         description: Détails de l'événement
+ *       404:
+ *         description: Événement introuvable
+ */
+eventRouter.route("/:id").get(authenticateToken, getEventById)
 
 module.exports = eventRouter

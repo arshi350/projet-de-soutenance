@@ -1,0 +1,165 @@
+================================================================================
+          PROPOSITION DE FONCTIONNALITÉS D'INTELLIGENCE ARTIFICIELLE (IA)
+                     POUR LA PLATEFORME ÉVÉNEMENTIELLE
+================================================================================
+Date : 10 Août 2026
+Projet : Plateforme de Billetterie & Gestion d'Événements Intelligente
+Auteur : Équipe de Développement Full-Stack & Lead IA
+
+--------------------------------------------------------------------------------
+TABLE DES MATIÈRES
+--------------------------------------------------------------------------------
+1. INTRODUCTION & OBJECTIFS
+2. FONCTIONNALITÉS IA POUR LES ÉVÉNEMENTS PRIVÉS
+   2.1. Concierge & Assistant Virtuel WhatsApp (AI RSVP Assistant)
+   2.2. Optimiseur Intelligent de Plan de Table (Smart Seating AI)
+   2.3. Rédacteur de Vœux, Invitations & Discours Personnalisés (AI Copywriter)
+   2.4. Galerie Photo Intelligente avec Reconnaissance Faciale
+3. FONCTIONNALITÉS IA POUR LES ÉVÉNEMENTS PUBLICS
+   3.1. Prédiction des Ventes & Tarification Dynamique (Dynamic Pricing AI)
+   3.2. Générateur de Campagnes Marketing & Réseaux Sociaux (AI Marketer)
+   3.3. Détection Intelligente des Fraudes & Analyse Prédictive des Flux
+   3.4. Matchmaking & Recommandations de Networking pour Salons / Conférences
+4. MATRICE DE PRIORISATION & FAISABILITÉ TECHNIQUE
+5. RECOMMANDATION POUR LA SOUTENANCE
+================================================================================
+
+
+1. INTRODUCTION & OBJECTIFS
+--------------------------------------------------------------------------------
+L'objectif de ces propositions est d'intégrer des fonctionnalités d'Intelligence 
+Artificielle modernes, pratiques et à forte valeur ajoutée, sans alourdir le flux 
+utilisateur. Chaque fonctionnalité est conçue pour résoudre un problème concret :
+- Pour l'organisateur : Gain de temps massif, optimisation des revenus et automatisation.
+- Pour les invités/participants : Expérience premium, fluide et interactive.
+
+
+================================================================================
+2. FONCTIONNALITÉS IA POUR LES ÉVÉNEMENTS PRIVÉS
+   (Mariages, Galas, Anniversaires, Séminaires Confidentiels, Soirées VIP)
+================================================================================
+
+2.1. Concierge & Assistant Virtuel WhatsApp (AI RSVP Assistant)
+--------------------------------------------------------------
+* Concept : Un agent IA connecté à l'API WhatsApp (via Gemini Flash / OpenAI)
+  qui répond automatiquement 24h/24 aux questions des invités.
+* Fonctionnalités :
+  - Répond aux questions pratiques : "Quel est le dress code ?", "Où se garer ?",
+    "Y a-t-il un menu végétarien ?", "À quelle heure commence la cérémonie ?".
+  - Enregistre directement le statut RSVP en temps réel dans la base de données
+    MongoDB (ex: si l'invité écrit "Je viens avec mon épouse", l'IA valide la présence).
+* Valeur Ajoutée Soutenance : Élimine les centaines d'appels reçus par les mariés
+  ou organisateurs la veille de l'événement.
+
+2.2. Optimiseur Intelligent de Plan de Table (Smart Seating AI)
+--------------------------------------------------------------
+* Concept : L'organisateur saisit la liste des invités avec quelques tags 
+  (Famille Marié, Famille Mariée, Collègues, Amis Enfance, Âge, Langue).
+* Fonctionnalités :
+  - L'IA calcule et génère automatiquement le plan de table optimal pour maximiser
+    la convivialité et éviter les incompatibilités.
+  - Exportation immédiate en PDF ou affichage interactif sur le tableau de bord.
+* Valeur Ajoutée Soutenance : Résout l'une des tâches les plus complexes et 
+  stressantes dans l'organisation de mariages et banquets.
+
+2.3. Rédacteur d'Invitations & Discours Personnalisés (AI Copywriter)
+--------------------------------------------------------------------
+* Concept : Un module d'aide à la rédaction intégré dans le Dashboard.
+* Fonctionnalités :
+  - Génère des messages d'invitation uniques adaptés au style choisi :
+    "Luxe & Prestigieux", "Chaleureux & Familial", "Humoristique", "Poétique".
+  - Propose aux témoins/organisateurs une ébauche de discours d'ouverture 
+    selon quelques anecdotes saisies en 3 clics.
+* Valeur Ajoutée Soutenance : Démonstration immédiate et interactive lors de la soutenance.
+
+2.4. Galerie Photo Intelligente avec Reconnaissance Faciale
+-----------------------------------------------------------
+* Concept : Après l'événement, les photos prises par le photographe ou les invités
+  sont téléversées dans un album global.
+* Fonctionnalités :
+  - L'invité scanne son QR Code ou télécharge un selfie : l'IA filtre l'album et 
+    lui délivre instantanément toutes les photos où il apparaît.
+* Valeur Ajoutée Soutenance : Effet "WOW" garanti auprès du jury.
+
+
+================================================================================
+3. FONCTIONNALITÉS IA POUR LES ÉVÉNEMENTS PUBLICS
+   (Concerts, Festivals, Spectacles, Salons, Conférences, Matchs)
+================================================================================
+
+3.1. Prédiction des Ventes & Tarification Dynamique (Dynamic Pricing AI)
+-----------------------------------------------------------------------
+* Concept : Un modèle d'analyse prédictive pour maximiser la rentabilité de la billetterie.
+* Fonctionnalités :
+  - Analyse le rythme d'achat des billets, le temps restant et les tendances historiques.
+  - Suggère des ajustements de tarifs : "Augmenter le tarif VIP de 15% car 80% des 
+    places sont vendues", ou "Lancer un tarif Flash Promo pour remplir les 50 places restantes".
+  - Prédiction de l'heure d'affluence maximale le jour de l'événement.
+* Valeur Ajoutée Soutenance : Aspect Business & Data-Science très apprécié des jurys.
+
+3.2. Générateur de Campagnes Marketing & Réseaux Sociaux (AI Marketer)
+----------------------------------------------------------------------
+* Concept : À partir des détails de l'événement public (Artiste, Date, Thème), l'IA crée :
+  - Des descriptions d'événements captivantes optimisées pour le SEO Google.
+  - Le calendrier de publications pour Instagram, Facebook, TikTok et LinkedIn.
+  - L'emailing de lancement avec objet percutant pour maximiser le taux d'ouverture.
+* Valeur Ajoutée Soutenance : Démontre un outil "clé en main" pour les promoteurs de concerts.
+
+3.3. Détection Intelligente des Fraudes & Analyse des Flux de Scan
+------------------------------------------------------------------
+* Concept : Module d'IA intégré dans l'application mobile Flutter et le Backend.
+* Fonctionnalités :
+  - Détection en temps réel des tentatives de fraude (ex: scan du même QR code à 
+    2 secondes d'intervalle à deux portes différentes, QR code falsifié).
+  - Alerte intelligente aux agents de sécurité sur l'application mobile.
+  - Tableau de bord en temps réel affichant la vitesse de scan par porte et 
+    recommandant d'ouvrir un guichet supplémentaire si une file s'accumule.
+* Valeur Ajoutée Soutenance : Met directement en valeur l'application mobile de scan.
+
+3.4. Matchmaking & Recommandations de Networking (Conférences / Salons B2B)
+---------------------------------------------------------------------------
+* Concept : Pour les événements professionnels, l'IA connecte les participants 
+  selon leurs compétences et leurs objectifs (recherche d'investisseurs, clients, partenaires).
+* Fonctionnalités :
+  - Sur la page publique, l'IA suggère les 5 personnes clés à rencontrer lors du salon.
+* Valeur Ajoutée Soutenance : Transforme la simple billetterie en véritable plateforme B2B.
+
+
+================================================================================
+4. MATRICE DE PRIORISATION & FAISABILITÉ TECHNIQUE
+================================================================================
+
++---------------------------------------------------+--------------+--------------+
+| Fonctionnalité IA                                 | Complexité   | Impact Jury  |
++---------------------------------------------------+--------------+--------------+
+| 1. Assistant / Rédacteur de Textes d'Invitations  | TRÈS FACILE  | ÉLEVÉ ⭐⭐⭐ |
+| 2. Analyse Prédictive & Détection Fraude de Scan  | FACILE       | TRÈS ÉLEVÉ⭐⭐⭐⭐|
+| 3. Dynamic Pricing & Prédictions d'Affluence      | MOYENNE      | ÉLEVÉ ⭐⭐⭐ |
+| 4. Concierge Virtuel WhatsApp / Chatbot           | MOYENNE      | TRÈS ÉLEVÉ⭐⭐⭐⭐|
+| 5. Galerie avec Reconnaissance Faciale            | ÉLEVÉE       | EFFET WOW ⭐⭐⭐⭐⭐|
++---------------------------------------------------+--------------+--------------+
+
+
+================================================================================
+5. RECOMMANDATION STRATÉGIQUE POUR LA SOUTENANCE
+================================================================================
+
+Pour maximiser la note de soutenance avec un temps d'implémentation optimal, 
+la combinaison gagnante recommandée est :
+
+1. POUR LES ÉVÉNEMENTS PRIVÉS :
+   👉 L'Assistant de Rédaction Intelligent d'Invitations (AI Copywriter) :
+      Permet à l'organisateur de cliquer sur "Générer un message d'invitation avec l'IA", 
+      de choisir le ton et d'obtenir un texte élégant instantanément.
+
+2. POUR LES ÉVÉNEMENTS PUBLICS :
+   👉 L'Analyse Intelligente des Scans & Prédiction de Présence (Scan AI Insights) :
+      Afficher sur le tableau de bord de l'événement public des graphiques prédictifs :
+      - Taux d'affluence estimé par heure.
+      - Détection des anomalies et alertes de sécurité en direct.
+      - Synthèse IA en 1 paragraphe : "Votre événement affiche un pic d'arrivée entre 
+        19h30 et 20h00, fluidité des entrées à 98%".
+
+================================================================================
+Fichier généré automatiquement pour le projet de soutenance.
+================================================================================

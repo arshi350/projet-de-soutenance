@@ -1,425 +1,303 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  useModifyTemplate,
-  useGetSuggestions,
-  useGreeting,
-  useModifyTextContent,
-  useModifyColors,
-} from '../../../../../hooks/useGeminie';
+// IntelligentDesign.jsx - Studio de Personnalisation avec Analyse Visuelle & Retouche d'Image Gemini
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAIChat } from '../../../../../hooks/useAIChat';
 import { useUploadTemplateImage } from '../../../../../hooks/useTemplates';
 import { useAuthContext } from '../../../../../context/AuthContext';
 import { 
-  Sparkles, User, Palette, Type, QrCode, Image, 
-  Plus, Download, Send, Check, ChevronRight, RefreshCw, 
-  SendHorizontal, Loader2, AlertCircle, Eye, EyeOff,
-  Calendar, MapPin, User as UserIcon, X, Crown
+  Sparkles, Download, Send, Check, ChevronRight, RefreshCw, 
+  RotateCcw, Copy, Loader2, AlertCircle, 
+  Crown, Database, LayoutTemplate, ArrowRight, Image as ImageIcon,
+  Eraser, Wand2, Eye, QrCode, Search
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export default function IntelligentDesign({ template, templateLoading, templateError, onTemplateChange }) {
+export default function IntelligentDesign({ template, templateLoading, templateError, onTemplateChange, eventInfo }) {
   const { token } = useAuthContext();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [chatInput, setChatInput] = useState('');
-  const [messages, setMessages] = useState([]);
+  const [copiedMessageId, setCopiedMessageId] = useState(null);
+  
+  // Hook de conversation et analyse visuelle IA Gemini
+  const { messages, sendMessage: sendAIMessage, resetSession, isLoading: isAILoading, isOnline } = useAIChat(
+    template?.id ? `template_${template.id}` : 'studio_global'
+  );
+
+  const messagesEndRef = useRef(null);
+
   const [ticketData, setTicketData] = useState({
-    guestName: '',
-    guestNameColor: '#017EF7',
+    guestName: 'Alexandre Martin',
+    guestNameColor: '#FF5005',
     qrCodeSize: 40,
-    title: '',
-    subtitle: '',
-    date: '',
-    location: '',
-    backgroundColor: 'from-slate-950 to-slate-900',
-    accentColor: '#017EF7'
+    title: eventInfo?.titre || eventInfo?.title || 'Invitation Officielle',
+    subtitle: 'VIP PRIVILÈGE',
+    date: eventInfo?.DateDebut ? new Date(eventInfo.DateDebut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '10 mai - 19h00',
+    location: eventInfo?.lieu || 'Palais des Congrès',
+    backgroundColor: 'from-[#0B1727] to-slate-900',
+    accentColor: '#FF5005',
+    isTextRemoved: false
   });
 
   const [committedTicketData, setCommittedTicketData] = useState(ticketData);
-  const [livePreview, setLivePreview] = useState(false);
   const [actionLogs, setActionLogs] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [generatedPreviewImage, setGeneratedPreviewImage] = useState(null);
-  const [showImagePreview, setShowImagePreview] = useState(false);
-  const [degradedMode, setDegradedMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Hooks IA
-  const { modifyTemplate, loading: modifyLoading, error: modifyError, generatedImage, warnings: modifyWarnings } = useModifyTemplate();
-  const { getSuggestions, suggestions, loading: suggestionsLoading, source: suggestionsSource } = useGetSuggestions();
-  const { greeting, loading: greetingLoading, source: greetingSource } = useGreeting();
-  const { modifyTextContent, loading: modifyTextLoading } = useModifyTextContent();
-  const { modifyColors, loading: modifyColorsLoading } = useModifyColors();
-
-  // Upload
+  // Upload d'image personnalisée
   const { uploadImage, loading: uploadLoading } = useUploadTemplateImage();
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
   const [localPreviewUrl, setLocalPreviewUrl] = useState(null);
-  const fileInputRef = useRef(null);
 
-  const isAnyLoading = [isLoading, modifyLoading, suggestionsLoading, greetingLoading, modifyTextLoading, modifyColorsLoading, uploadLoading].some(Boolean);
-  const combinedError = templateError || modifyError;
-
-  // Détection du mode dégradé
+  // Auto-scroll vers le bas lors de l'arrivée d'un message
   useEffect(() => {
-    if (modifyWarnings && modifyWarnings.length > 0) {
-      const hasDegradedWarning = modifyWarnings.some(w => 
-        w.toLowerCase().includes('dégradé') || 
-        w.toLowerCase().includes('limitée') ||
-        w.toLowerCase().includes('fallback')
-      );
-      setDegradedMode(hasDegradedWarning);
-    }
-  }, [modifyWarnings]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isAILoading]);
 
-  // Initialisation du template
+  // Navigation vers l'onglet Templates
+  const handleGoToTemplates = () => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', 'templates');
+      return next;
+    });
+  };
+
+  // Initialisation du template lorsqu'il est présent
   useEffect(() => {
     if (!template) return;
 
     const base = {
-      guestName: template.defaultGuestName || template.guestName || 'Jean Dupont',
-      guestNameColor: template.guestNameColor || '#017EF7',
+      guestName: template.defaultGuestName || template.guestName || 'Alexandre Martin',
+      guestNameColor: template.guestNameColor || '#FF5005',
       qrCodeSize: template.qrCodeSize || 40,
-      title: template.titre || template.title || 'Invitation',
-      subtitle: template.description || template.subtitle || '',
+      title: template.titre || template.title || eventInfo?.titre || 'Invitation',
+      subtitle: template.description || template.subtitle || 'VIP MEMBER ⭐',
       date: template.date || '10 mai - 19h00',
       location: template.location || 'Palais Brongniart',
-      backgroundColor: template.backgroundColor || 'from-slate-950 to-slate-900',
-      accentColor: template.accentColor || '#017EF7',
+      backgroundColor: template.backgroundColor || 'from-[#0B1727] to-slate-900',
+      accentColor: template.accentColor || '#FF5005',
+      isTextRemoved: false
     };
 
     setCommittedTicketData(base);
     setTicketData(base);
-  }, [template]);
-
-  // Message de bienvenue
-  useEffect(() => {
-    if (!token || !template?.id || messages.length > 0) return;
-
-    const initGreeting = async () => {
-      try {
-        const greetingText = await greeting('Bonjour, je souhaite personnaliser mon invitation', token);
-        const welcomeMessage = greetingText || `Bonjour ! Je peux vous aider à personnaliser vos billets. Quel style souhaitez-vous appliquer ?`;
-        
-        setMessages([{
-          id: Date.now(),
-          type: 'assistant',
-          content: welcomeMessage,
-          timestamp: new Date()
-        }]);
-      } catch (error) {
-        setMessages([{
-          id: Date.now(),
-          type: 'assistant',
-          content: `Bonjour ! Je peux vous aider à personnaliser vos billets. Quel style souhaitez-vous appliquer ?`,
-          timestamp: new Date()
-        }]);
-      }
-    };
-
-    initGreeting();
-  }, [template?.id, token, greeting, messages.length]);
-
-  // Chargement des suggestions
-  useEffect(() => {
-    if (!token || !template?.id) return;
-    getSuggestions(template.id, template.eventType || 'personnalisé', token).catch(console.error);
-  }, [template?.id, template?.eventType, token, getSuggestions]);
-
-  // Gestion de l'image générée
-  useEffect(() => {
-    if (generatedImage) {
-      setGeneratedPreviewImage(generatedImage);
-      setShowImagePreview(true);
-      addActionLog('Image générée avec succès !', 'success');
-      
-      setTimeout(() => {
-        setShowImagePreview(false);
-      }, 8000);
+    
+    if (template.generatedImage) {
+      setGeneratedPreviewImage(template.generatedImage);
     }
-  }, [generatedImage]);
-
-  // Preview en temps réel
-  useEffect(() => {
-    if (!livePreview) {
-      setTicketData(committedTicketData);
-      return;
-    }
-    const preview = applyLocalPreview(chatInput, committedTicketData);
-    setTicketData(preview);
-  }, [livePreview, chatInput, committedTicketData]);
+  }, [template, eventInfo]);
 
   const displayedImage = generatedPreviewImage || localPreviewUrl || uploadedImageUrl || template?.image;
-
-  const handleFileSelect = () => fileInputRef.current?.click();
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const localUrl = URL.createObjectURL(file);
-      setLocalPreviewUrl(localUrl);
-      const url = await uploadImage(file);
-      setUploadedImageUrl(url);
-      addActionLog('Image téléversée avec succès', 'success');
-    } catch (err) {
-      console.error('Upload error', err);
-      addActionLog("Erreur lors de l'upload", 'error');
-    }
-  };
-
-  const applyLocalPreview = (command, base) => {
-    if (!command?.trim()) return { ...base };
-    const lower = command.toLowerCase();
-    const result = { ...base };
-
-    if (lower.includes('nom') && (lower.includes('bleu') || lower.includes('couleur'))) result.guestNameColor = '#017EF7';
-    if (lower.includes('nom') && lower.includes('rouge')) result.guestNameColor = '#EF4444';
-    if (lower.includes('qr') && lower.includes('agrandir')) result.qrCodeSize = Math.min(80, base.qrCodeSize + 8);
-    if (lower.includes('qr') && (lower.includes('réduire') || lower.includes('diminuer'))) result.qrCodeSize = Math.max(24, base.qrCodeSize - 8);
-    
-    const nameMatch = command.match(/(?:appelle|nommer?)\s+(\S+(?:\s+\S+)?)/i);
-    if (nameMatch && nameMatch[1].length > 2) result.guestName = nameMatch[1].trim();
-    
-    const titleMatch = command.match(/(?:titre|intitulé)\s+["']?(.+?)["']?/i);
-    if (titleMatch) result.title = titleMatch[1].trim();
-    
-    const dateMatch = command.match(/(\d{1,2})\s+(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+(\d{4})/i);
-    if (dateMatch) result.date = `${dateMatch[1]} ${dateMatch[2].toUpperCase()} ${dateMatch[3]}`;
-
-    return result;
-  };
 
   const addActionLog = (text, type = 'success') => {
     const log = { id: Date.now(), text, type };
     setActionLogs(prev => [...prev, log]);
-    setTimeout(() => setActionLogs(prev => prev.filter(l => l.id !== log.id)), 3000);
+    setTimeout(() => setActionLogs(prev => prev.filter(l => l.id !== log.id)), 4000);
   };
 
-  const quickAction = (action) => {
-    switch(action) {
-      case 'couleur':
-        const colors = ['#017EF7', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6'];
-        const currentIndex = colors.indexOf(ticketData.guestNameColor);
-        const nextColor = colors[(currentIndex + 1) % colors.length];
-        setCommittedTicketData(prev => ({ ...prev, guestNameColor: nextColor }));
-        setTicketData(prev => ({ ...prev, guestNameColor: nextColor }));
-        addActionLog(`Couleur changée pour ${nextColor}`, 'success');
-        break;
-      case 'titre':
-        const titles = ['GALA EXCEPTIONNEL', 'SOIRÉE PRESTIGE', 'ÉLÉGANCE NOIRE'];
-        const currentTitle = ticketData.title;
-        const currentTitleIndex = titles.indexOf(currentTitle);
-        const nextTitle = titles[(currentTitleIndex + 1) % titles.length];
-        setCommittedTicketData(prev => ({ ...prev, title: nextTitle }));
-        setTicketData(prev => ({ ...prev, title: nextTitle }));
-        addActionLog(`Titre modifié : ${nextTitle}`, 'success');
-        break;
-      case 'qrcode':
-        const newSize = ticketData.qrCodeSize === 40 ? 56 : 40;
-        setCommittedTicketData(prev => ({ ...prev, qrCodeSize: newSize }));
-        setTicketData(prev => ({ ...prev, qrCodeSize: newSize }));
-        addActionLog(`QR Code ${newSize === 56 ? 'agrandi' : 'réduit'}`, 'success');
-        break;
-      default:
-        addActionLog('Action en développement', 'info');
-    }
+  const handleCopyMessage = (msgId, text) => {
+    navigator.clipboard.writeText(text);
+    setCopiedMessageId(msgId);
+    addActionLog('Texte copié dans le presse-papier !', 'success');
+    setTimeout(() => setCopiedMessageId(null), 2500);
   };
 
-  const sendMessage = async () => {
-    if (!chatInput.trim() || isAnyLoading) return;
+  // Envoi avec analyse multimodale et retouche d'image
+  const handleSendMessage = async (textToSend) => {
+    const prompt = (textToSend || chatInput).trim();
+    if (!prompt || isAILoading) return;
 
-    const userMessage = {
-      id: Date.now(),
-      type: 'user',
-      content: chatInput,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    const currentPrompt = chatInput;
     setChatInput('');
-    setIsLoading(true);
+    
+    // Image source du template à analyser
+    const imageToAnalyze = displayedImage || template?.image || template?.imageUrl || null;
 
-    try {
-      if (!template?.id) throw new Error('Template non sélectionné');
+    addActionLog('Analyse visuelle et retouche IA en cours...', 'info');
 
-      const lower = currentPrompt.toLowerCase();
-      let response = null;
-      let modifiedData = null;
+    const result = await sendAIMessage(prompt, imageToAnalyze, committedTicketData);
 
-      if (lower.includes('couleur') || lower.includes('palette') || lower.includes('coloris')) {
-        response = await modifyColors({
-          accent: ticketData.accentColor,
-          primary: ticketData.accentColor,
-          text: ticketData.guestNameColor,
-        }, currentPrompt, token);
-        
-        if (response) {
-          modifiedData = { 
-            accentColor: response.accent || response.primary || '#017EF7', 
-            guestNameColor: response.text || '#017EF7'
+    if (result) {
+      if (result.modifications) {
+        setCommittedTicketData(prev => {
+          const updated = {
+            ...prev,
+            title: result.modifications.title || prev.title,
+            subtitle: result.modifications.subtitle || prev.subtitle,
+            guestNameColor: result.modifications.guestNameColor || prev.guestNameColor,
+            accentColor: result.modifications.accentColor || prev.accentColor,
+            qrCodeSize: result.modifications.qrCodeSize || prev.qrCodeSize,
+            isTextRemoved: result.modifications.isTextRemoved ?? prev.isTextRemoved
           };
-        }
-      } 
-      else if (lower.includes('titre') || lower.includes('message') || lower.includes('texte')) {
-        response = await modifyTextContent({
-          title: ticketData.title,
-          message: ticketData.subtitle,
-          date: ticketData.date,
-          location: ticketData.location,
-        }, currentPrompt, token);
-        
-        if (response) {
-          modifiedData = {
-            title: response.titre || response.title || ticketData.title,
-            subtitle: response.message || ticketData.subtitle,
-            date: response.date || ticketData.date,
-            location: response.lieu || response.location || ticketData.location,
-          };
-        }
-      }
-      else {
-        const templateImage = template.image || displayedImage;
-        response = await modifyTemplate(template.id, currentPrompt, token, templateImage);
-        
-        if (response?.generatedImage) {
-          setGeneratedPreviewImage(response.generatedImage);
-          setShowImagePreview(true);
-          addActionLog('Nouvelle image générée !', 'success');
-        }
-        
-        if (response?.modifiedData) {
-          modifiedData = response.modifiedData;
+          setTicketData(updated);
+          return updated;
+        });
+
+        if (result.modifications.isTextRemoved) {
+          addActionLog('Textes localisés et supprimés de l\'image', 'success');
+        } else {
+          addActionLog('Design et styles ajustés par l\'IA', 'success');
         }
       }
 
-      if (modifiedData && Object.keys(modifiedData).length > 0) {
-        const newData = { ...committedTicketData, ...modifiedData };
-        setCommittedTicketData(newData);
-        setTicketData(newData);
+      if (result.generatedImage) {
+        setGeneratedPreviewImage(result.generatedImage);
       }
-
-      let assistantContent = '✅ QR code modernisé et couleurs premium. J\'ai appliqué un dégradé doré sur le QR, ajouté un badge VIP étoilé et purifié la typographie pour un aspect plus luxueux.';
-      
-      if (modifiedData && Object.keys(modifiedData).length > 0) {
-        assistantContent = '✅ Modification appliquée avec succès ! Le design a été mis à jour.';
-      }
-
-      const assistantMessage = {
-        id: Date.now() + 1,
-        type: 'assistant',
-        content: assistantContent,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, assistantMessage]);
-      addActionLog('Modification appliquée', 'success');
-
-    } catch (error) {
-      console.error('Erreur sendMessage:', error);
-      
-      let errorMessage = "Désolé, je n'ai pas pu appliquer cette modification. ";
-      if (error.message?.includes('quota') || error.message?.includes('429') || error.status === 429) {
-        errorMessage = "⚠️ Le service IA est temporairement saturé. Les modifications basiques (couleurs, texte) sont toujours disponibles. Réessayez dans quelques instants.";
-        setDegradedMode(true);
-      } else if (error.message?.includes('réseau') || error.message?.includes('network')) {
-        errorMessage = "🔌 Problème de connexion au service IA. Vérifiez votre connexion internet.";
-      } else {
-        errorMessage += "Pouvez-vous reformuler votre demande ?";
-      }
-      
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1,
-        type: 'assistant',
-        content: errorMessage,
-        timestamp: new Date()
-      }]);
-      addActionLog("Erreur lors de la modification", 'error');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const downloadDesign = () => {
-    if (generatedPreviewImage) {
+    if (displayedImage) {
       const link = document.createElement('a');
-      link.href = generatedPreviewImage;
+      link.href = displayedImage;
       link.download = `design-invitation-${Date.now()}.png`;
       link.click();
       addActionLog('Téléchargement démarré', 'success');
-    } else if (displayedImage && displayedImage !== template?.image) {
-      const link = document.createElement('a');
-      link.href = displayedImage;
-      link.download = `aperçu-template-${Date.now()}.png`;
-      link.click();
-      addActionLog('Aperçu téléchargé', 'success');
     } else {
       addActionLog("Aucune image à télécharger", 'error');
     }
   };
-  
-  const validateDesign = () => {
-    addActionLog('Design validé avec succès !', 'success');
-    if (onTemplateChange && generatedPreviewImage) {
-      onTemplateChange({ ...template, generatedImage: generatedPreviewImage, validated: true });
+
+  // Composant TicketPreview
+  const TicketPreview = () => {
+    if (!template || !template.id) {
+      return (
+        <div className="bg-white rounded-3xl p-8 shadow-xs border border-gray-200/80 flex flex-col items-center justify-center text-center min-h-[460px] space-y-5">
+          <div className="w-20 h-20 rounded-3xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-[#FF5005] shadow-xs">
+            <LayoutTemplate className="w-10 h-10" />
+          </div>
+
+          <div className="space-y-2 max-w-sm">
+            <h3 className="text-xl font-black text-gray-900 tracking-tight">
+              Aucun modèle sélectionné
+            </h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Sélectionnez un gabarit d'invitation pour activer le studio de retouche et l'analyse visuelle multimodale.
+            </p>
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            type="button"
+            onClick={handleGoToTemplates}
+            className="px-6 py-3 bg-[#FF5005] hover:bg-[#ff6220] text-white text-xs font-bold rounded-xl shadow-md shadow-orange-500/25 transition flex items-center gap-2 cursor-pointer uppercase tracking-wider"
+          >
+            <LayoutTemplate className="w-4 h-4" />
+            <span>Choisir un modèle</span>
+            <ArrowRight className="w-4 h-4" />
+          </motion.button>
+        </div>
+      );
     }
+
+    return (
+      <div className="space-y-6">
+        {/* MODÈLE ORIGINAL */}
+        <div className="bg-white rounded-3xl p-6 shadow-xs border border-gray-200/80">
+          <h3 className="text-[10px] font-extrabold text-gray-400 mb-3 uppercase tracking-widest">Modèle Source</h3>
+          <div className="text-center">
+            {(() => {
+              const originalImage = template?.image || template?.imageUrl ||
+                'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80';
+              return (
+                <div className="relative w-full rounded-2xl overflow-hidden mb-3 bg-gray-100 border border-gray-200/60">
+                  <img 
+                    src={originalImage} 
+                    alt={template?.title || 'Template'} 
+                    className='w-full h-auto object-contain' 
+                    onError={(e) => {
+                      e.target.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80';
+                    }}
+                  />
+                </div>
+              );
+            })()}
+            <p className="text-xs text-gray-500 font-semibold">{committedTicketData.title}<br />{committedTicketData.date}</p>
+          </div>
+        </div>
+
+        {/* MODÈLE RETOUCHÉ PAR L'IA */}
+        <div className="bg-white rounded-3xl p-6 shadow-xs border border-gray-200/80">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Rendu Retouché par l'IA</h3>
+              {committedTicketData.isTextRemoved && (
+                <span className="text-[9px] bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold">
+                  <Eraser className="w-3 h-3" />
+                  Texte supprimé
+                </span>
+              )}
+            </div>
+            <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1 font-bold">
+              <Check className="w-3 h-3" />
+              Retouche active
+            </span>
+          </div>
+          <div className="text-center">
+            {(() => {
+              const originalImage = template?.image || template?.imageUrl ||
+                'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80';
+              const modifiedImage = generatedPreviewImage || localPreviewUrl || uploadedImageUrl || originalImage;
+
+              return (
+                <>
+                  <div className="relative w-full rounded-2xl overflow-hidden mb-3 bg-[#0B1727] shadow-lg border border-gray-800">
+                    <img 
+                      src={modifiedImage} 
+                      alt="Aperçu modifié par l'IA" 
+                      className='w-full h-auto object-contain rounded-2xl'
+                      onError={(e) => {
+                        e.target.src = originalImage;
+                      }}
+                    />
+                  </div>
+                  
+                  <p className="font-black text-gray-900 text-base" style={{ color: committedTicketData.guestNameColor }}>
+                    {committedTicketData.guestName || 'Alexandre Martin'}
+                  </p>
+                  <p className="text-xs font-bold mt-0.5 text-[#EFB810]">
+                    {committedTicketData.subtitle || 'VIP MEMBER ⭐'}
+                  </p>
+                </>
+              );
+            })()}
+
+            <p className="text-xs text-gray-400 mt-2 font-medium">{committedTicketData.title}<br />{committedTicketData.date}</p>
+            {displayedImage && (
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <button
+                  onClick={downloadDesign}
+                  className="text-xs text-[#FF5005] hover:underline cursor-pointer font-bold flex items-center gap-1"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Télécharger le visuel HD
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
-  // Composant TicketPreview (version maquette)
-  const TicketPreview = () => (
-    <div className="space-y-6">
-      {/* TEMPLET ORIGINAL */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-500 mb-3">TEMPLET ORIGINAL</h3>
-        <div className="text-center">
-          <div className="w-24 h-24 bg-gray-100 rounded-2xl mx-auto mb-3 flex items-center justify-center">
-            <QrCode className="w-12 h-12 text-gray-400" />
-          </div>
-          <p className="font-bold text-gray-900">Jean Dupont - VIP</p>
-          <p className="text-xs text-gray-500 mt-2">GALA TECH 2025<br />10 mai - 19h00</p>
-        </div>
-      </div>
-
-      {/* TEMPLET MODIFIÉ (IA) */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-500 mb-3">TEMPLET MODIFIÉ (IA)</h3>
-        <div className="text-center">
-          <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-2xl mx-auto mb-3 flex items-center justify-center shadow-lg">
-            <QrCode className="w-12 h-12 text-white" />
-          </div>
-          <p className="font-bold text-gray-900">Jean Dupont</p>
-          <p className="text-xs font-semibold text-amber-600">VIP MEMBER ⭐</p>
-          <p className="text-xs text-gray-500 mt-2 font-bold">GALA EXCEPTIONNEL</p>
-          <p className="text-xs text-gray-500">GALA TECH 2025<br />10 mai - 19h00</p>
-          <p className="text-xs font-semibold text-gray-700 mt-2">SÉRIE LIMITÉE<br />#042/500</p>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header avec breadcrumb */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+    <div className="min-h-screen bg-gray-50/50 font-sans text-left text-slate-900">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200/80 px-6 py-4">
         <div className="max-w-[1400px] mx-auto">
-          <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
+          <div className="flex items-center gap-2 text-[10px] text-gray-400 mb-1">
             <span>Accueil</span>
             <ChevronRight className="w-3 h-3" />
-            <span>Templates</span>
+            <button onClick={handleGoToTemplates} className="hover:text-gray-600 cursor-pointer">Templates</button>
             <ChevronRight className="w-3 h-3" />
-            <span>{template?.titre || template?.title || 'Template'}</span>
+            <span>{template?.titre || template?.title || 'Modèle'}</span>
             <ChevronRight className="w-3 h-3" />
-            <span className="text-[#017EF7]">Personnalisation IA</span>
+            <span className="text-[#FF5005] font-bold">Studio Retouche IA</span>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Conception Intelligente</h1>
-          <p className="text-xs text-gray-500 mt-1">Assistant IA pour la création de billets</p>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Studio de Retouche & Vision IA</h1>
+          <p className="text-xs text-gray-400 mt-0.5">L'IA analyse l'image de votre template, localise les calques et applique vos consignes sur-mesure.</p>
         </div>
       </div>
-
-      {/* Mode dégradé banner */}
-      {degradedMode && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2 text-center">
-          <p className="text-xs text-amber-700 flex items-center justify-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            Mode dégradé actif - Les modifications de base (couleurs, texte) restent disponibles
-          </p>
-        </div>
-      )}
 
       <div className="max-w-[1400px] mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -429,162 +307,222 @@ export default function IntelligentDesign({ template, templateLoading, templateE
             <TicketPreview />
           </div>
 
-          {/* Colonne droite - Chat IA */}
+          {/* Colonne droite - Chat IA Retouche */}
           <div className="space-y-5">
             
-            {/* CHAT IA */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-5 py-3 border-b border-gray-100 bg-white">
-                <h3 className="font-bold text-gray-900">CHAT IA</h3>
+            {/* BOÎTE DE CHAT IA */}
+            <div className="bg-white rounded-3xl shadow-xs border border-gray-200/80 overflow-hidden flex flex-col h-[580px]">
+              
+              {/* En-tête du chat */}
+              <div className="px-5 py-3.5 border-b border-gray-100 bg-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-2xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-[#FF5005]">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-gray-900 text-xs uppercase tracking-wider flex items-center gap-2">
+                      Copilote Créatif & Vision
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                        isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                        {isOnline ? 'Actif' : 'Hors ligne'}
+                      </span>
+                    </h3>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={resetSession}
+                  disabled={isAILoading}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition cursor-pointer"
+                  title="Réinitialiser la session"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
               </div>
 
-              {/* Messages */}
-              <div className="h-[400px] overflow-y-auto p-5 space-y-4 bg-gray-50/30">
-                {messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <Sparkles className="w-8 h-8 text-gray-300 mb-2" />
-                    <p className="text-sm text-gray-500">💬 Posez votre première question !</p>
+              {/* Zone des messages */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50/30 text-xs">
+                {messages.map((message) => (
+                  <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {message.type === 'assistant' && (
+                      <div className="max-w-[88%] group relative">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-extrabold text-[#FF5005]">COPILOTE CRÉATIF</span>
+                        </div>
+                        <div className={`bg-white rounded-2xl rounded-tl-none px-4 py-3 shadow-xs border ${
+                          message.isError ? 'border-red-200 bg-red-50 text-red-700' : 'border-gray-200/80 text-gray-800'
+                        }`}>
+                          <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                          
+                          {message.detectedTexts && message.detectedTexts.length > 0 && (
+                            <div className="mt-2.5 pt-2 border-t border-gray-100">
+                              <p className="text-[10px] font-bold text-gray-400 mb-1 flex items-center gap-1">
+                                <Search size={11} />
+                                <span>Textes détectés :</span>
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {message.detectedTexts.map((txt, idx) => (
+                                  <span key={idx} className="text-[10px] bg-gray-100 text-gray-700 px-2 py-0.5 rounded-md font-mono">
+                                    "{txt}"
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {message.type === 'user' && (
+                      <div className="max-w-[85%]">
+                        <div className="flex items-center justify-end gap-2 mb-1">
+                          <span className="text-[10px] font-extrabold text-gray-400">VOUS</span>
+                        </div>
+                        <div className="bg-[#0B1727] rounded-2xl rounded-tr-none px-4 py-3 shadow-xs text-white">
+                          <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  messages.map((message) => (
-                    <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      {message.type === 'assistant' && (
-                        <div className="max-w-[85%]">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-bold text-[#017EF7]">ASSISTANT IA</span>
-                            <span className="text-[9px] text-gray-400">
-                              {message.timestamp ? new Date(message.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '14:20'}
-                            </span>
-                          </div>
-                          <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 shadow-sm border border-gray-100">
-                            <p className="text-sm text-gray-700">{message.content}</p>
-                          </div>
-                        </div>
-                      )}
-                      {message.type === 'user' && (
-                        <div className="max-w-[85%]">
-                          <div className="flex items-center justify-end gap-2 mb-1">
-                            <span className="text-[10px] font-bold text-gray-500">VOUS</span>
-                            <span className="text-[9px] text-gray-400">
-                              {message.timestamp ? new Date(message.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '14:21'}
-                            </span>
-                          </div>
-                          <div className="bg-[#017EF7] rounded-2xl rounded-tr-none px-4 py-3 shadow-sm">
-                            <p className="text-sm text-white">{message.content}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-                
-                {isAnyLoading && (
+                ))}
+
+                {isAILoading && (
                   <div className="flex justify-start">
                     <div className="max-w-[85%]">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold text-[#017EF7]">ASSISTANT IA</span>
-                      </div>
-                      <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 shadow-sm border border-gray-100">
+                      <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 shadow-xs border border-gray-200 flex items-center gap-2">
+                        <span className="text-xs text-gray-500 font-bold">Analyse multimodale et retouche en cours...</span>
                         <div className="flex gap-1">
-                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          <span className="w-1.5 h-1.5 bg-[#FF5005] rounded-full animate-bounce" />
+                          <span className="w-1.5 h-1.5 bg-[#FF5005] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 bg-[#FF5005] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
                       </div>
                     </div>
                   </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
 
-              {/* Suggestions Pills */}
-              <div className="px-5 py-3 border-t border-gray-100">
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={() => { setChatInput('rends le billet plus moderne avec un QR doré'); setTimeout(() => sendMessage(), 100); }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition">
-                    🎨 fond doré
+              {/* Suggestions */}
+              <div className="px-4 py-2.5 border-t border-gray-100 bg-white">
+                <div className="flex flex-wrap gap-1.5">
+                  <button 
+                    onClick={() => handleSendMessage('Supprime tout le texte sur cette image pour laisser le fond vierge')} 
+                    className="px-2.5 py-1 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5005] rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                  >
+                    <Eraser className="w-3 h-3" />
+                    <span>Supprimer les textes</span>
                   </button>
-                  <button onClick={() => quickAction('qrcode')} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition">
-                    📱 QR plus grand
+                  <button 
+                    onClick={() => handleSendMessage('Adopte une finition dorée et luxueuse')} 
+                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3 text-[#EFB810]" />
+                    <span>Finition Or Royal</span>
                   </button>
-                  <button onClick={() => { setChatInput('rends la typographie plus élégante'); setTimeout(() => sendMessage(), 100); }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition">
-                    ✏️ typo élégante
+                  <button 
+                    onClick={() => handleSendMessage('Agrandis le QR code pour un scan fluide')} 
+                    className="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-full text-xs font-bold transition cursor-pointer flex items-center gap-1"
+                  >
+                    <QrCode className="w-3 h-3 text-gray-500" />
+                    <span>Agrandir QR Code</span>
                   </button>
                 </div>
               </div>
 
-              {/* Input */}
-              <div className="p-4 border-t border-gray-100">
-                <div className="relative">
+              {/* Saisie */}
+              <div className="p-3.5 border-t border-gray-100 bg-white">
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }}
+                  className="relative flex items-center"
+                >
                   <input
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    placeholder="Décrivez vos changements ici..."
-                    className="w-full px-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#017EF7]/20 focus:border-[#017EF7] transition"
-                    disabled={isAnyLoading}
+                    placeholder="Ex: supprime les textes sur l'affiche, passe les titres en or..."
+                    className="w-full px-4 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#FF5005] transition font-medium"
+                    disabled={isAILoading}
                   />
                   <button 
-                    onClick={sendMessage} 
-                    disabled={!chatInput.trim() || isAnyLoading} 
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-[#017EF7] disabled:bg-gray-300 text-white rounded-lg transition hover:bg-blue-600"
+                    type="submit" 
+                    disabled={!chatInput.trim() || isAILoading} 
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#FF5005] disabled:opacity-40 text-white rounded-lg transition hover:bg-[#ff6220] cursor-pointer"
+                    title="Envoyer"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-3.5 h-3.5" />
                   </button>
-                </div>
+                </form>
               </div>
             </div>
 
             {/* APPLIQUER LES CHANGEMENTS */}
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => {
                 if (JSON.stringify(committedTicketData) !== JSON.stringify(ticketData)) {
                   setCommittedTicketData(ticketData);
                   addActionLog('Modifications appliquées au design', 'success');
+                } else {
+                  addActionLog('Modifications enregistrées', 'success');
                 }
               }}
-              className="w-full py-3 bg-white border-2 border-[#017EF7] text-[#017EF7] font-bold rounded-xl hover:bg-[#017EF7]/5 transition flex items-center justify-center gap-2"
+              className="w-full py-3 bg-white border-2 border-[#FF5005] text-[#FF5005] font-black rounded-xl hover:bg-orange-50 transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider text-xs shadow-xs"
             >
               <Check className="w-4 h-4" />
-              APPLIQUER LES CHANGEMENTS
-            </button>
+              Appliquer les Changements
+            </motion.button>
 
-            {/* Message contextuel */}
-            <p className="text-center text-[11px] text-gray-400">
-              ⚠️ Aperçu basé sur Jean Dupont – Le design s'appliquera à tous les invités
-            </p>
-
-            {/* GÉNÉRER POUR TOUS LES INVITÉS */}
-            <button
-              onClick={() => addActionLog('Génération des billets pour tous les invités...', 'success')}
-              className="w-full py-3.5 bg-gradient-to-r from-[#EF5D02] to-[#FF7B2A] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+            {/* ENREGISTRER DANS LES FAVORIS */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              disabled={isSaving || isAILoading}
+              onClick={async () => {
+                const imgToSave = displayedImage || template?.image || generatedPreviewImage;
+                if (!imgToSave) {
+                  addActionLog("Veuillez d'abord choisir un template", "error");
+                  return;
+                }
+                try {
+                  setIsSaving(true);
+                  const { saveFavoriteTemplate } = await import('../../../../../services/rsvpService');
+                  await saveFavoriteTemplate({
+                    eventId: template?.eventId || template?._id || eventInfo?._id || null,
+                    titre: ticketData.title || template?.titre || "Billet Personnalisé IA",
+                    imageUrl: imgToSave,
+                    prompt: chatInput || "Billet personnalisé par IA",
+                    metadata: {
+                      theme: "modern-luxury",
+                      palette: [ticketData.guestNameColor, ticketData.accentColor],
+                      aspectRatio: "16:9",
+                      sourceModel: "GEMINI_VISION_RETOUCH"
+                    }
+                  }, token);
+                  addActionLog("Modèle enregistré dans vos favoris !", "success");
+                } catch (err) {
+                  console.error("Erreur favori:", err);
+                  addActionLog("Erreur lors de l'enregistrement", "error");
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+              className="w-full py-3 bg-amber-50 border border-amber-300 text-amber-800 font-extrabold rounded-xl hover:bg-amber-100 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs uppercase tracking-wider text-xs"
             >
-              <Download className="w-4 h-4" />
-              GÉNÉRER POUR TOUS LES INVITÉS
-            </button>
-
-            {/* Footer */}
-            <div className="text-center pt-4">
-              <p className="text-[9px] text-gray-300">
-                © 2024 ARSHIEVENT AI. Tous droits réservés.
-              </p>
-            </div>
+              <Crown className="w-4 h-4 text-[#EFB810]" />
+              <span>{isSaving ? "Enregistrement..." : "Enregistrer dans mes Favoris"}</span>
+            </motion.button>
           </div>
         </div>
       </div>
-
-      {/* Toasts */}
-      {actionLogs.length > 0 && (
-        <div className="fixed bottom-20 right-6 z-50 flex flex-col gap-2">
-          {actionLogs.map((log) => (
-            <div key={log.id} className={`px-4 py-2 rounded-lg shadow-lg text-sm font-medium animate-fade-in ${
-              log.type === 'success' ? 'bg-emerald-500 text-white' : 
-              log.type === 'error' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'
-            }`}>
-              {log.text}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

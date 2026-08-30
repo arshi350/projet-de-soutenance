@@ -14,9 +14,9 @@ const sectionAnimation = {
     visible: { opacity: 1, y: 0 }
 };
 
-export function Home(){
+export function Home() {
 
-    return(
+    return (
         <section>
             <motion.header
                 className="sticky top-0 z-50"
@@ -25,7 +25,7 @@ export function Home(){
                 variants={sectionAnimation}
                 transition={{ duration: 0.7, ease: 'easeOut' }}
             >
-                <Header/>
+                <Header />
             </motion.header>
 
             <section>
@@ -36,7 +36,7 @@ export function Home(){
                     variants={sectionAnimation}
                     transition={{ duration: 0.7, ease: 'easeOut', delay: 0.1 }}
                 >
-                    <HeroSection/>
+                    <HeroSection />
                 </motion.div>
 
                 <motion.div
@@ -46,7 +46,7 @@ export function Home(){
                     variants={sectionAnimation}
                     transition={{ duration: 0.7, ease: 'easeOut', delay: 0.2 }}
                 >
-                    <FeaturesSection/>
+                    <FeaturesSection />
                 </motion.div>
 
                 <motion.div
@@ -56,7 +56,7 @@ export function Home(){
                     variants={sectionAnimation}
                     transition={{ duration: 0.7, ease: 'easeOut', delay: 0.3 }}
                 >
-                    <ConciergeSection/>
+                    <ConciergeSection />
                 </motion.div>
 
                 <motion.div
@@ -66,7 +66,7 @@ export function Home(){
                     variants={sectionAnimation}
                     transition={{ duration: 0.7, ease: 'easeOut', delay: 0.4 }}
                 >
-                    <CommentCaMarche/>
+                    <CommentCaMarche />
                 </motion.div>
 
                 <motion.div
@@ -76,7 +76,7 @@ export function Home(){
                     variants={sectionAnimation}
                     transition={{ duration: 0.7, ease: 'easeOut', delay: 0.5 }}
                 >
-                    <ActivitesRecentes/>
+                    <ActivitesRecentes />
                 </motion.div>
 
                 <motion.div
@@ -86,7 +86,7 @@ export function Home(){
                     variants={sectionAnimation}
                     transition={{ duration: 0.7, ease: 'easeOut', delay: 0.6 }}
                 >
-                    <Tarification/>
+                    <Tarification />
                 </motion.div>
 
                 <motion.div
@@ -96,12 +96,12 @@ export function Home(){
                     variants={sectionAnimation}
                     transition={{ duration: 0.7, ease: 'easeOut', delay: 0.7 }}
                 >
-                    <LogosConfiance/>
+                    <LogosConfiance />
                 </motion.div>
             </section>
 
             <footer>
-                <Footer/>
+                <Footer />
             </footer>
         </section>
     )

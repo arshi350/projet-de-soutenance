@@ -55,7 +55,7 @@ const AdminUsers = () => {
         status: user.suspended ? 'Suspendu' : 'Actif',
         lastLogin: user.lastLogin || '—',
         joinDate,
-        price: user.price || (user.plan === 'PREMIUM' ? '49€/mois' : '0€/mois'),
+        price: user.price || (user.plan === 'PREMIUM' ? '29 900 FCFA/mois' : '0 FCFA/mois'),
         history: user.history || []
       };
     });
@@ -96,7 +96,7 @@ const AdminUsers = () => {
   };
 
   const handleGoPremium = (id) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, plan: "PREMIUM", price: "49€/mois" } : u));
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, plan: "PREMIUM", price: "29 900 FCFA/mois" } : u));
   };
 
   const handleSuspendUser = (id) => {

@@ -8,17 +8,26 @@
   "main": "app.js",
   "scripts": {
     "start": "nodemon app.js",
-    "create-admin": "node createAdmin.js"
+    "create-admin": "node createAdmin.js",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.10.1",
     "@google/genai": "^2.7.0",
+    "@google/generative-ai": "^0.24.1",
+    "@sendinblue/client": "^3.3.1",
     "axios": "^1.17.0",
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.2",
+    "google-auth-library": "^11.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.1.0",
     "mongoose": "^9.3.1",
@@ -26,8 +35,11 @@
     "node-cron": "^4.2.1",
     "nodemon": "^3.1.14",
     "qrcode": "^1.5.4",
+    "resend": "^6.14.0",
     "speakeasy": "^2.0.0",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "tesseract.js": "^7.0.0",
+    "xlsx": "^0.18.5"
   }
 }

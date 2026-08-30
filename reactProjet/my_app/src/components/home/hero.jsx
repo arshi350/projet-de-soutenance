@@ -1,490 +1,265 @@
+import React, { useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Play } from "lucide-react";
+import { Play, Sparkles, QrCode, ArrowRight, ShieldCheck, Zap, Users, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import img from "../../assets/img1.jpg";
-import img2 from "../../assets/bg1.png";
 
 export function HeroSection() {
   const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 300], [0, 100]);
-  const y2 = useTransform(scrollY, [0, 300], [0, -50]);
+  const yParallax = useTransform(scrollY, [0, 500], [0, 80]);
+  const yParallaxFast = useTransform(scrollY, [0, 500], [0, -60]);
 
-  // Animation variants avec durée de 2 secondes
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.3,
-        delayChildren: 0.2,
-        duration: .4
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 30, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 80,
-        damping: 15,
-        duration: .5
-      }
-    }
-  };
-
-  const badgeVariants = {
-    hidden: { scale: 0, opacity: 0, rotate: -10 },
-    visible: {
-      scale: 1,
-      opacity: 1,
-      rotate: 0,
-      transition: {
-        type: "spring",
-        stiffness: 150,
-        damping: 20,
-        delay: 0.3,
-        duration: 2
-      }
-    },
-    hover: {
-      scale: 1.05,
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 10,
-        duration: 0.5
-      }
-    }
-  };
-
-  const titleVariants = {
-    hidden: { x: -100, opacity: 0 },
-    visible: {
-      x: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 70,
-        damping: 20,
-        duration: 2,
-        delay: 0.2
-      }
-    }
-  };
-
-  const imageVariants = {
-    hidden: { 
-      x: 200, 
-      opacity: 0, 
-      rotateY: 60,
-      scale: 0.8
-    },
-    visible: {
-      x: 0,
-      opacity: 1,
-      rotateY: 0,
-      scale: 1,
-      transition: {
-        type: "spring",
-        stiffness: 60,
-        damping: 20,
-        duration: 2.5,
-        delay: 0.4
-      }
-    },
-    hover: {
-      scale: 1.05,
-      rotateY: 5,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 20,
-        duration: 0.6
-      }
-    }
-  };
-
-  const imageBorderVariants = {
-    hidden: { 
-      borderWidth: "0px",
-      borderColor: "rgba(255, 80, 5, 0)"
-    },
-    visible: {
-      borderWidth: "14px",
-      borderColor: "#FF5005",
-      transition: {
-        duration: 2,
-        delay: 0.6,
-        ease: "easeOut"
-      }
-    }
-  };
-
-  const buttonVariants = {
-    hidden: { y: 80, opacity: 0, scale: 0.9 },
-    visible: (i) => ({
-      y: 0,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        delay: 0.6 + i * 0.2,
-        type: "spring",
-        stiffness: 80,
-        damping: 15,
-        duration: 2
-      }
-    }),
-    hover: {
-      scale: 1.08,
-      boxShadow: "0 20px 40px rgba(0,0,0,0.15)",
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 10,
-        duration: 0.5
-      }
-    },
-    tap: {
-      scale: 0.96,
-      transition: {
-        duration: 0.2
-      }
-    }
-  };
-
-  const floatingCardVariants = {
-    hidden: { y: 80, opacity: 0, scale: 0.8 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        delay: 0.8,
-        type: "spring",
-        stiffness: 80,
-        damping: 15,
-        duration: 2
-      }
-    },
-    animate: {
-      y: [0, -15, 0],
-      transition: {
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    },
-    hover: {
-      scale: 1.08,
-      y: -20,
-      boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 15,
-        duration: 0.5
-      }
-    }
-  };
-
-  const pulseVariants = {
-    animate: {
-      scale: [1, 1.3, 1],
-      opacity: [0.5, 1, 0.5],
-      transition: {
-        duration: 2,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
-  };
-
-  const gradientVariants = {
-    animate: {
-      scale: [1, 1.2, 1],
-      opacity: [0.15, 0.3, 0.15],
-      transition: {
-        duration: 4,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
-  };
-
-  const iconVariants = {
-    animate: {
-      x: [0, 6, 0],
-      transition: {
-        duration: 1.5,
-        repeat: Infinity,
-        repeatDelay: 0.5,
-        ease: "easeInOut"
-      }
-    }
-  };
+  // Compteur flip / digital dynamique
+  const [count, setCount] = useState(540);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCount((prev) => (prev < 590 ? prev + 1 : 540));
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
-    <motion.section 
-      className="relative top-[-50px] flex items-center justify-center px-20 py-16 bg-[#f5f5f5] overflow-hidden min-h-screen"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
-      {/* Background Image avec parallax et fade in */}
-      <motion.img 
-        className="absolute z-0 opacity-30 object-cover w-full h-full"
-        src={img2} 
-        alt=""
-        style={{ y: y1 }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.3 }}
-        transition={{ duration: 2 }}
-      />
+    <section className="relative min-h-[78vh] flex items-center justify-center overflow-hidden bg-[#0B1727] text-white pt-30 pb-30 px-5 md:px-10 lg:px-16">
       
-      {/* LEFT */}
-      <div className="w-[45%] relative z-10">
-        
-        {/* Badge */}
+      {/* Background Mesh Gradient & Glowing Orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Glow Orb Orange */}
         <motion.div 
-          className="w-80 gap-3 flex items-center justify-center text-[12px] tracking-wide bg-[#FF5005]/20 px-5 py-1 rounded-xl mb-6 cursor-pointer"
-          variants={badgeVariants}
-          whileHover="hover"
-        >
-          <motion.div 
-            className="w-3 h-3 bg-[#FF5005] rounded-full text-white font-bold"
-            variants={pulseVariants}
-            animate="animate"
-          />
-          <span className="text-[#FF5005] font-semibold">+500 ÉVÉNEMENTS GÉRÉS CE MOIS-CI</span>
-        </motion.div>
-
-        {/* TITLE */}
-        <motion.div variants={titleVariants}>
-          <h1 className="text-7xl uppercase leading-[1.1] font-bold text-gray-800">
-            <motion.span 
-              className="text-[#FF5005] inline-block"
-              whileHover={{ scale: 1.05, x: 8 }}
-              transition={{ type: "spring", stiffness: 300, duration: 0.5 }}
-            >
-              Automatisez
-            </motion.span>
-            <br />
-            <motion.span 
-              className="text-gray-700 inline-block"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4, duration: 2 }}
-            >
-              vos invitations.
-            </motion.span>
-            <br />
-            <motion.span 
-              className="text-[#1E6FD9] inline-block"
-              whileHover={{ scale: 1.05, x: 8 }}
-              transition={{ type: "spring", stiffness: 300, duration: 0.5 }}
-            >
-              Optimisez
-            </motion.span>{" "}
-            <br />
-            <motion.span 
-              className="text-gray-700 inline-block"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6, duration: 2 }}
-            >
-              la présence.
-            </motion.span>
-          </h1>
-        </motion.div>
-
-        {/* TEXT */}
-        <motion.p 
-          className="mt-6 text-gray-500 text-[16px] leading-relaxed max-w-[480px]"
-          variants={itemVariants}
-        >
-          Gérez vos événements professionnels ou festifs avec
-          l'intelligence des QR codes et le suivi invités en temps réel.
-          Zéro stress, 100% élégance.
-        </motion.p>
-
-        {/* BUTTONS */}
-        <div className="mt-8 space-y-4">
-          <motion.button 
-            className="bg-[#1E6FD9] text-white px-7 py-5 rounded-xl cursor-pointer text-[15px] font-medium shadow-lg relative overflow-hidden group"
-            custom={0}
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-            whileFocus={{ scale: 1.02 }}
-          >
-            {/* Effet de ripple au hover */}
-            <motion.div 
-              className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20"
-              initial={{ scale: 0 }}
-              whileHover={{ scale: 1 }}
-              transition={{ duration: 0.5 }}
-            />
-            Créer mon premier événement gratuitement
-          </motion.button>
-
-          <motion.button 
-            className="flex items-center gap-2 px-7 py-5 rounded-xl cursor-pointer border border-[#FF5005] text-[#FF5005] text-[15px] font-medium bg-white hover:bg-[#FF5005]/5 transition-all relative overflow-hidden group"
-            custom={1}
-            variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
-          >
-            <motion.div
-              variants={iconVariants}
-              animate="animate"
-            >
-              <Play size={16} />
-            </motion.div>
-            Regarder la démo (30s)
-            <motion.div 
-              className="absolute inset-0 bg-[#FF5005] opacity-0 group-hover:opacity-5"
-              initial={{ scale: 0 }}
-              whileHover={{ scale: 1 }}
-              transition={{ duration: 0.5 }}
-            />
-          </motion.button>
-        </div>
+          className="absolute -top-20 -left-20 w-[450px] h-[450px] rounded-full bg-[#FF5005]/20 blur-[130px]"
+          animate={{
+            scale: [1, 1.15, 1],
+            x: [0, 30, 0],
+            y: [0, 20, 0],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Glow Orb Navy/Blue */}
+        <motion.div 
+          className="absolute top-1/3 -right-20 w-[500px] h-[500px] rounded-full bg-[#1E6FD9]/25 blur-[140px]"
+          animate={{
+            scale: [1, 1.2, 1],
+            x: [0, -40, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
       </div>
 
-      {/* RIGHT IMAGE */}
-      <motion.div 
-        className="relative z-10 w-[40%] flex justify-center perspective-1000"
-        variants={imageVariants}
-        whileHover="hover"
-      >
-        <motion.div 
-          className="rounded-xl overflow-hidden shadow-2xl bg-black"
-          variants={imageBorderVariants}
-          style={{ borderStyle: "solid" }}
-          whileHover={{ rotate: 3, scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20, duration: 0.6 }}
-        >
-          <motion.img
-            src={img}
-            alt="event preview"
-            className="w-[85%] object-cover"
-            initial={{ scale: 1.1, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 2.5, delay: 0.8, ease: "easeOut" }}
-            whileHover={{ scale: 1.08 }}
-            transition={{ duration: 0.6 }}
-          />
-          {/* Overlay au survol */}
+      <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-6 items-center relative z-10">
+        
+        {/* COLONNE GAUCHE (CONTENU & CTAs) */}
+        <div className="lg:col-span-7 space-y-5 text-left">
+          
+          {/* BADGE PRESTIGE FLIP CHRONO */}
           <motion.div 
-            className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0"
-            whileHover={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-          />
-        </motion.div>
-      </motion.div>
-
-      {/* FLOATING CARD */}
-      <motion.div 
-        className="absolute z-10 bottom-25 right-[43%] bg-white px-5 py-4 rounded-xl shadow-lg cursor-pointer backdrop-blur-sm bg-white/95"
-        variants={floatingCardVariants}
-        animate="animate"
-        whileHover="hover"
-      >
-        <p className="text-[11px] font-semibold text-gray-500">
-          TAUX DE PRÉSENCE
-        </p>
-
-        <div className="flex items-center gap-3 mt-2">
-          <motion.span 
-            className="text-[28px] font-bold text-[#1E6FD9]"
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 1.2, type: "spring", duration: 1.5 }}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-inner"
           >
-            84%
-          </motion.span>
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF5005] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF5005]"></span>
+            </span>
+            <span className="text-xs font-bold tracking-wider uppercase text-gray-300">
+              <span className="text-[#FF5005] font-extrabold">{count}+</span> Événements propulsés ce mois-ci
+            </span>
+            <div className="h-3 w-px bg-white/20"></div>
+            <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-1">
+              <CheckCircle2 size={11} /> 99.9% Taux de scan
+            </span>
+          </motion.div>
 
-          <div className="w-[40px] h-[10px] bg-gray-200 rounded-full overflow-hidden">
-            <motion.div 
-              className="h-full bg-[#1E6FD9] rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: "84%" }}
-              transition={{ delay: 1.4, duration: 1.5, ease: "easeOut" }}
-            />
-          </div>
+          {/* TITRE MONUMENTAL */}
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] text-white"
+          >
+            L'excellence de vos événements,{" "}
+            <span className="bg-gradient-to-r from-[#FF5005] via-[#ff7b2a] to-[#EFB810] bg-clip-text text-transparent">
+              scénarisée par l'IA.
+            </span>
+          </motion.h1>
+
+          {/* DESCRIPTION */}
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed font-normal"
+          >
+            Plateforme tout-en-un de gestion événementielle de nouvelle génération : billetterie instantanée, RSVP protocolaire, scans haute fréquence et concierge marketing intelligent.
+          </motion.p>
+
+          {/* CTA BOUTONS */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1"
+          >
+            <Link to="/register">
+              <motion.button 
+                whileHover={{ scale: 1.03, boxShadow: "0 12px 25px -5px rgba(255, 80, 5, 0.5)" }}
+                whileTap={{ scale: 0.97 }}
+                className="w-full sm:w-auto px-6 py-3 bg-[#FF5005] hover:bg-[#ff6220] text-white font-bold text-xs rounded-lg flex items-center justify-center gap-2.5 shadow-lg shadow-orange-600/30 cursor-pointer transition-all duration-200"
+              >
+                <span>Créer mon événement VIP</span>
+                <ArrowRight size={16} />
+              </motion.button>
+            </Link>
+
+            <a href="#services">
+              <motion.button 
+                whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 255, 255, 0.12)" }}
+                whileTap={{ scale: 0.97 }}
+                className="w-full sm:w-auto px-5 py-3 bg-white/5 hover:bg-white/10 text-white font-semibold text-xs rounded-lg border border-white/15 backdrop-blur-md flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer"
+              >
+                <div className="w-6 h-6 rounded-full bg-[#FF5005]/20 flex items-center justify-center text-[#FF5005]">
+                  <Play size={11} className="fill-[#FF5005] ml-0.5" />
+                </div>
+                <span>Découvrir la plateforme</span>
+              </motion.button>
+            </a>
+          </motion.div>
+
+          {/* REASSURANCE / METRICS */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="pt-6 border-t border-white/10 grid grid-cols-3 gap-4 max-w-lg"
+          >
+            <div>
+              <div className="text-2xl font-black text-white tracking-tight">0.1s</div>
+              <div className="text-[11px] text-gray-400 uppercase font-semibold mt-0.5">Vitesse de Scan</div>
+            </div>
+            <div>
+              <div className="text-2xl font-black text-emerald-400 tracking-tight">100%</div>
+              <div className="text-[11px] text-gray-400 uppercase font-semibold mt-0.5">Sécurité Cryptée</div>
+            </div>
+            <div>
+              <div className="text-2xl font-black text-[#EFB810] tracking-tight">24/7</div>
+              <div className="text-[11px] text-gray-400 uppercase font-semibold mt-0.5">Concierge IA</div>
+            </div>
+          </motion.div>
+
         </div>
-      </motion.div>
 
-      {/* Background Gradients Animés */}
-      <motion.div 
-        className="absolute top-120 left-0 w-120 h-120 bg-[#FF5005]/15 rounded-full blur-3xl"
-        variants={gradientVariants}
-        animate="animate"
-        style={{ y: y2 }}
-      />
-      <motion.div 
-        className="absolute top-0 left-320 w-120 h-120 bg-[#1E6FD9]/25 rounded-full blur-3xl"
-        variants={gradientVariants}
-        animate="animate"
-        style={{ y: y2 }}
-      />
+        {/* COLONNE DROITE (3D PREVIEW CARTE & LIVE SCANNER) */}
+        <div className="lg:col-span-5 relative perspective-1000 flex justify-center">
+          
+          {/* CARTE PRINCIPALE CINEMATIQUE */}
+          <motion.div 
+            style={{ y: yParallax }}
+            initial={{ opacity: 0, scale: 0.9, rotateY: 15 }}
+            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+            transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
+            whileHover={{ rotateY: -4, rotateX: 4, scale: 1.02 }}
+            className="w-full max-w-md bg-[#111827]/90 rounded-3xl p-6 border border-white/15 backdrop-blur-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] relative overflow-hidden group"
+          >
+            {/* Ambient halo on hover */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#FF5005]/10 via-transparent to-[#1E6FD9]/15 opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
-      {/* Particules décoratives améliorées */}
-      {[...Array(12)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-2 h-2 bg-[#FF5005] rounded-full"
-          initial={{
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
-            opacity: 0
-          }}
-          animate={{
-            y: [null, -40, -80],
-            opacity: [0, 0.8, 0],
-            scale: [0, 1.5, 0]
-          }}
-          transition={{
-            duration: 4 + Math.random() * 3,
-            repeat: Infinity,
-            delay: Math.random() * 3,
-            ease: "easeOut"
-          }}
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`
-          }}
-        />
-      ))}
+            {/* Header de la carte de prévisualisation */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#FF5005] flex items-center justify-center text-white font-bold text-xs shadow-md shadow-orange-500/30">
+                  AE
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white tracking-wide">Gala Tech International 2025</h4>
+                  <p className="text-[10px] text-gray-400">Palais des Congrès • Paris</p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                Direct Live
+              </span>
+            </div>
 
-      {/* Ajout d'un effet de brillance sur l'image */}
-      <motion.div
-        className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-r from-[#FF5005]/20 to-[#1E6FD9]/20 rounded-full blur-3xl pointer-events-none"
-        animate={{
-          scale: [1, 1.5, 1],
-          opacity: [0.3, 0.6, 0.3],
-          x: ["-50%", "-40%", "-50%"],
-          y: ["-50%", "-60%", "-50%"]
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        style={{ transform: "translate(-50%, -50%)" }}
-      />
-    </motion.section>
+            {/* IMAGE D'ÉVÉNEMENT AVEC SCAN LASER */}
+            <div className="my-5 relative rounded-2xl overflow-hidden aspect-[4/3] bg-black/40 border border-white/10">
+              <img 
+                src={img} 
+                alt="Event Preview" 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80"
+              />
+              
+              {/* Ligne Laser de Scan Holographique */}
+              <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-[#FF5005] to-transparent shadow-[0_0_15px_#FF5005] animate-scan-laser pointer-events-none"></div>
+              
+              {/* Badge VIP Overlay */}
+              <div className="absolute top-3 right-3 px-3 py-1 bg-black/70 backdrop-blur-md rounded-full border border-[#EFB810]/40 text-[#EFB810] text-[10px] font-extrabold flex items-center gap-1 shadow-lg">
+                <Sparkles size={11} />
+                PASS VIP EXCLUSIF
+              </div>
+
+              {/* QR Code Glass Box */}
+              <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md p-2 rounded-xl border border-white/20 flex items-center gap-2.5 shadow-xl">
+                <QrCode size={32} className="text-white" />
+                <div className="text-left pr-2">
+                  <div className="text-[10px] font-extrabold text-white">#AE-9824-FR</div>
+                  <div className="text-[8px] text-emerald-400 font-semibold">CERTIFIÉ BLOCKCHAIN</div>
+                </div>
+              </div>
+            </div>
+
+            {/* STATISTIQUES EN TEMPS RÉEL */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="text-[10px] font-bold text-gray-400 uppercase">Taux de présence</div>
+                <div className="text-xl font-extrabold text-white flex items-center gap-2 mt-0.5">
+                  <span>94.2%</span>
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">+12%</span>
+                </div>
+                <div className="w-full bg-white/10 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "94.2%" }}
+                    transition={{ duration: 1.5, delay: 0.5 }}
+                    className="bg-gradient-to-r from-[#FF5005] to-orange-400 h-full rounded-full"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+                <div className="text-[10px] font-bold text-gray-400 uppercase">Invités Confirmés</div>
+                <div className="text-xl font-extrabold text-white mt-0.5">
+                  1,420 <span className="text-xs text-gray-400 font-normal">/ 1,500</span>
+                </div>
+                <div className="text-[10px] text-[#FF5005] font-semibold flex items-center gap-1 mt-2">
+                  <TrendingUp size={11} /> 95% Capacité max
+                </div>
+              </div>
+            </div>
+
+          </motion.div>
+
+          {/* FLOATING MINI WIDGET 1 */}
+          <motion.div 
+            style={{ y: yParallaxFast }}
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -bottom-6 -left-6 bg-[#0B1727]/95 border border-white/15 backdrop-blur-xl rounded-2xl p-4 shadow-2xl hidden sm:flex items-center gap-3.5 z-20"
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+              <Zap size={18} />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white">Scan Instantané</div>
+              <div className="text-[10px] text-gray-400">Émission de billet &lt; 0.2s</div>
+            </div>
+          </motion.div>
+
+        </div>
+
+      </div>
+
+    </section>
   );
 }
-
-// Ajout du CSS pour la perspective 3D
-const style = document.createElement('style');
-style.textContent = `
-  .perspective-1000 {
-    perspective: 1000px;
-  }
-`;
-document.head.appendChild(style);

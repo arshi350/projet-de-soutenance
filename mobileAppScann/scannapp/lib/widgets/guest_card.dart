@@ -20,7 +20,7 @@ class GuestCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.white,
           border: Border(
             bottom: BorderSide(color: AppColors.greyLight, width: 0.5),
@@ -31,7 +31,7 @@ class GuestCard extends StatelessWidget {
             Container(
               width: 48,
               height: 48,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.greyBackground,
                 shape: BoxShape.circle,
               ),
@@ -62,7 +62,7 @@ class GuestCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     guest.email,
-                    style: TextStyle(fontSize: 13, color: AppColors.grey),
+                    style: const TextStyle(fontSize: 13, color: AppColors.grey),
                   ),
                 ],
               ),
@@ -84,7 +84,7 @@ class GuestCard extends StatelessWidget {
                     margin: const EdgeInsets.only(top: 4),
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.orange.withOpacity(0.1),
+                      color: AppColors.orange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(

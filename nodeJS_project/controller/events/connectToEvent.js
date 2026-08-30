@@ -1,4 +1,5 @@
 const { eventModel } = require("../../models/eventModels/event");
+const { createNotification } = require('../../services/notificationService');
 
 const connectToEventByCode = async (req, res) => {
     try {
@@ -13,6 +14,19 @@ const connectToEventByCode = async (req, res) => {
 
         if (!event) {
             return res.status(404).json({ message: "Code d'événement invalide ou événement introuvable." });
+        }
+
+        try {
+            await createNotification({
+                userId: event.userId,
+                title: 'Code événement utilisé',
+                message: `Le code de l'événement "${event.titre}" a été utilisé avec succès.`,
+                type: 'event',
+                referenceId: event._id,
+                referenceType: 'event'
+            });
+        } catch (notifError) {
+            console.warn('Notification non créée pour la connexion avec code événement :', notifError.message);
         }
 
         return res.status(200).json({

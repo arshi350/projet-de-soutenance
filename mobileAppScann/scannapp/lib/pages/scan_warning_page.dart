@@ -1,4 +1,3 @@
-
 // lib/pages/scan_warning_page.dart
 import 'package:flutter/material.dart';
 import '../models/event_model.dart';
@@ -10,11 +9,23 @@ import 'scan_page.dart';
 class ScanWarningPage extends StatelessWidget {
   final EventModel event;
   final GuestModel guest;
+  final String? scannedAt;
+  final String? errorMessage;
 
-  const ScanWarningPage({super.key, required this.event, required this.guest});
+  const ScanWarningPage({
+    super.key, 
+    required this.event, 
+    required this.guest,
+    this.scannedAt,
+    this.errorMessage,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final displayTime = scannedAt != null && scannedAt!.isNotEmpty 
+        ? scannedAt! 
+        : 'Précédemment enregistré';
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -23,65 +34,68 @@ class ScanWarningPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: 84,
+              height: 84,
               decoration: BoxDecoration(
                 color: AppColors.warning,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.warning.withOpacity(0.3),
-                    blurRadius: 20,
+                    color: AppColors.warning.withOpacity(0.35),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: const Icon(Icons.warning_amber, color: Colors.white, size: 40),
+              child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 48),
             ),
             const SizedBox(height: 24),
             const Text(
-              'DÉJÀ SCANNÉ',
+              'BILLET DÉJÀ SCANNÉ',
               style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.1,
                 color: AppColors.warning,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              guest.fullName,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+              guest.fullName.isNotEmpty ? guest.fullName : 'Billet Officiel',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 24),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: AppColors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.05),
-                    blurRadius: 10,
+                    color: AppColors.black.withOpacity(0.06),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  _buildInfoRow('Premier scan', '19h42'),
-                  const SizedBox(height: 12),
-                  _buildInfoRow('Poste', 'Entrée principale'),
-                  const SizedBox(height: 12),
-                  _buildInfoRow('Statut', 'Présent'),
+                  _buildInfoRow('Horodatage 1er Scan', displayTime),
+                  const Divider(height: 24, color: AppColors.greyLight),
+                  _buildInfoRow('Catégorie', guest.status.toUpperCase()),
+                  const Divider(height: 24, color: AppColors.greyLight),
+                  _buildInfoRow('Statut Entrée', 'Accès Déjà Validé'),
                 ],
               ),
             ),
             const SizedBox(height: 24),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                'Cet invité a déjà validé son entrée au poste de contrôle indiqué ci-dessus.',
+                errorMessage ?? 'Ce QR Code a déjà été validé à l\'entrée. Le porteur ne peut pas entrer une seconde fois avec le même billet.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: AppColors.grey),
+                style: const TextStyle(fontSize: 13, color: AppColors.grey, height: 1.4),
               ),
             ),
             const SizedBox(height: 32),
@@ -95,12 +109,16 @@ class ScanWarningPage extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.orange,
                 foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
+                elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              child: const Text('PASSER AU SUIVANT'),
+              child: const Text(
+                'PASSER AU SCAN SUIVANT',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
+              ),
             ),
           ],
         ),
@@ -118,10 +136,10 @@ class ScanWarningPage extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 14, color: AppColors.grey)),
+        Text(label, style: const TextStyle(fontSize: 13, color: AppColors.grey)),
         Text(
           value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.black),
         ),
       ],
     );

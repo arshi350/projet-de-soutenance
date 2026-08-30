@@ -1,122 +1,109 @@
-import axios from 'axios';
+import api from './api';
 
-const API_URL = 'http://localhost:3000/api';
-
-//service pour ajouter un événement
+// Service pour ajouter un événement
 export const addEvent = async (eventData, token) => {
     try {
-        
-        const response = await axios.post(`${API_URL}/event/addEvent`, eventData, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        })
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.post('/event/addEvent', eventData, config);
         return response.data;
-
     } catch (error) {
-        console.error('erreur lors de l\'ajout de l\'événement:', error);
-        throw error;
+        console.error('Erreur lors de l\'ajout de l\'événement:', error);
+        throw error.response?.data || error;
     }
-}
+};
 
-//service pour récupérer les événements d'un utilisateur
+// Service pour récupérer les événements d'un utilisateur
 export const getUserEvents = async (userId, token) => {
     try {
-        const response = await axios.get(`${API_URL}/event/getAllEventByUser/${userId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        })
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.get(`/event/getAllEventByUser/${userId}`, config);
         return response.data;
-
     } catch (error) {
-        console.error('erreur lors de la récupération des événements:', error);
-        throw error;
+        console.error('Erreur lors de la récupération des événements:', error);
+        throw error.response?.data || error;
     }
-}
+};
 
-//service pour recuperer les evenement recent d'un utilisateur
+// Service pour récupérer les événements récents d'un utilisateur
 export const getRecentEvents = async (userId, token) => {
     try {
-
-        const response = await axios.get(`${API_URL}/event/getRecentEventsByUser/${userId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        })
-
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.get(`/event/getRecentEventsByUser/${userId}`, config);
         return response.data;
-
     } catch (error) {
-        console.error('erreur lors de la récupération des événements récents:', error);
-        throw error;
+        console.error('Erreur lors de la récupération des événements récents:', error);
+        throw error.response?.data || error;
     }
-}
+};
 
-//service pour recuperer les evenement recent 
+// Service pour récupérer les événements récents
 export const getRecentEvent = async (token) => {
     try {
-        const response = await axios.get(`${API_URL}/event/getRecentvents`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        });
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.get('/event/getRecentvents', config);
         const data = response.data;
         return data?.events || data?.data || data;
-
     } catch (error) {
-        console.error('erreur lors de la récupération de l\'événement récent:', error);
-        throw error;
+        console.error('Erreur lors de la récupération de l\'événement récent:', error);
+        throw error.response?.data || error;
     }
-}
+};
 
-//service pour supprimer un événement
+// Service pour supprimer un événement
 export const deleteEvent = async (eventId, token) => {
     try {
-        const response = await axios.delete(`${API_URL}/event/deleteEvent/${eventId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        })
-        
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.delete(`/event/deleteEvent/${eventId}`, config);
         return response.data;
-
     } catch (error) {
-        console.error('erreur lors de la suppression de l\'événement:', error);
-        throw error;
+        console.error('Erreur lors de la suppression de l\'événement:', error);
+        throw error.response?.data || error;
     }
-}
+};
 
-//service pour mettre à jour un événement
+export const getEventById = async (eventId, token) => {
+    try {
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.get(`/event/${eventId}`, config);
+        return response.data;
+    } catch (error) {
+        console.error('Erreur lors de la récupération de l\'événement :', error);
+        throw error.response?.data || error;
+    }
+};
+
+export const getRecentScannedInvites = async (eventId, token, limit = 10) => {
+    try {
+        const query = limit > 0 ? `?limit=${limit}` : '?limit=0';
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.get(`/invite/getRecentScanned/${eventId}${query}`, config);
+        return response.data;
+    } catch (error) {
+        console.error('Erreur lors de la récupération des invités scannés :', error);
+        throw error.response?.data || error;
+    }
+};
+
+// Service pour mettre à jour un événement
 export const updateEvent = async (eventId, eventData, token) => {
     try {
-
-        const response = await axios.put(`${API_URL}/event/updateEvent/${eventId}`, eventData, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            }
-        })
-
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.put(`/event/updateEvent/${eventId}`, eventData, config);
         return response.data;
-
     } catch (error) {
-        console.error('erreur lors de la mise à jour de l\'événement:', error);
-        throw error;
+        console.error('Erreur lors de la mise à jour de l\'événement:', error);
+        throw error.response?.data || error;
     }
-}
+};
 
-//service pour récupérer tous les événements (admin)
+// Service pour récupérer tous les événements (admin)
 export const getAllEventsAdmin = async (token) => {
     try {
-        const response = await axios.get(`${API_URL}/event/admin/getAllEvents`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.get('/event/admin/getAllEvents', config);
         return response.data;
     } catch (error) {
-        console.error("erreur lors de la récupération de tous les événements:", error);
-        throw error;
+        console.error("Erreur lors de la récupération de tous les événements:", error);
+        throw error.response?.data || error;
     }
-}
+};

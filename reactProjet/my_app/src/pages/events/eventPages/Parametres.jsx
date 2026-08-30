@@ -1,15 +1,26 @@
 import React from 'react';
-import ManageEvent from '../../../components/dashboard/event/manageEvent/ManageEvent';
+import Event_parameter from '../../../components/dashboard/event/manageEvent/event_parametter';
 
-const Parametres = () => (
-  <section className="pt-6 pb-12">
-    <div className="max-w-7xl mx-auto px-6">
-      <h2 className="text-2xl font-bold text-slate-900 mb-4">Paramètres</h2>
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-        <ManageEvent />
+export const Parametres = ({ eventInfo }) => {
+  return (
+    <section className="pt-6 pb-12 font-sans text-left">
+      <div className="max-w-7xl mx-auto px-6 space-y-6">
+        <div>
+          <span className="text-[11px] font-black uppercase tracking-widest text-[#FF5005] block">
+            Supervision Technique
+          </span>
+          <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+            Paramètres & Règles d'Accès
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Configurez les quotas, les horaires, les contrôles de billets et les informations de l'événement.
+          </p>
+        </div>
+
+        <Event_parameter eventInfo={eventInfo} />
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default Parametres;

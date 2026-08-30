@@ -72,6 +72,44 @@ const eventSchema = new mongoose.Schema({
     totalInvites: {
         type: Number,
         default: 0
+    },
+    eventType: {
+        type: String,
+        enum: ['private', 'public'],
+        default: 'private'
+    },
+    pricing: {
+        maxCapacity: {
+            type: Number,
+            default: 50
+        },
+        channel: {
+            type: String,
+            enum: ['email', 'whatsapp', 'both'],
+            default: 'email'
+        },
+        totalPaid: {
+            type: Number,
+            default: 0
+        },
+        isActivated: {
+            type: Boolean,
+            default: false
+        },
+        feeStructure: {
+            durationDays: { type: Number, default: 1 },
+            baseFee: { type: Number, default: 0 },
+            channelCost: { type: Number, default: 0 },
+            calculatedTotal: { type: Number, default: 0 }
+        },
+        publicFeeBearer: {
+            type: String,
+            enum: ['buyer', 'organizer'],
+            default: 'buyer'
+        },
+        paidAt: {
+            type: Date
+        }
     }
 })
 

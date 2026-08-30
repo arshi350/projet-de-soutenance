@@ -1,7 +1,9 @@
-
 const express = require('express');
 const QrRouter = express.Router();
-const { generateQrCode, getQrcode, getQrcodeImage, getAllQrcodeImages  } = require('../controller/invites/generateQrCode');
+const { generateQrCode, generateSingleQrCode, getQrcode, getQrcodeImage, getAllQrcodeImages  } = require('../controller/invites/generateQrCode');
+
+// Route : Générer un QR code pour un seul invité
+QrRouter.route('/create-single/:inviteId').post(generateSingleQrCode);
 
 // Route : Générer les QR codes pour tous les invités d'un événement
 /**

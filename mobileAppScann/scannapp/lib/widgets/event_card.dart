@@ -29,7 +29,7 @@ class EventCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withOpacity(0.05),
+            color: AppColors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -44,7 +44,7 @@ class EventCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.orange.withOpacity(0.1),
+                  color: AppColors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child:
@@ -73,10 +73,10 @@ class EventCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.green.withOpacity(0.12),
+                      color: AppColors.green.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                       border:
-                          Border.all(color: AppColors.green.withOpacity(0.2)),
+                          Border.all(color: AppColors.green.withValues(alpha: 0.2)),
                     ),
                     child: const Text(
                       'connecte',
@@ -129,7 +129,7 @@ class EventCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.green.withOpacity(0.1),
+                  color: AppColors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -215,7 +215,7 @@ class EventCard extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           text,
-          style: TextStyle(fontSize: 12, color: AppColors.grey),
+          style: const TextStyle(fontSize: 12, color: AppColors.grey),
         ),
       ],
     );

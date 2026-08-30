@@ -1,144 +1,143 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, MapPin, Users, BarChart2, Edit3, Loader, AlertCircle, Trash2, CalendarDays, PartyPopper, Music, Briefcase, GraduationCap, Gift, Sparkles, Globe, Trophy, Heart, Coffee, Mic, Film, Camera, Zap } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { 
+  Plus, Calendar, MapPin, Users, BarChart2, Edit3, Loader, AlertCircle, 
+  Trash2, CalendarDays, PartyPopper, Music, Briefcase, GraduationCap, Gift, 
+  Sparkles, Globe, Trophy, Heart, Coffee, Mic, Film, Camera, Zap, ArrowRight,
+  Clock, ShieldCheck, Search, LayoutGrid, List, SlidersHorizontal, Share2, 
+  Check, ExternalLink, Copy 
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useGetUserEvents, useDeleteEvent } from '../../../hooks/useEvent';
 import { useAuthContext } from '../../../context/AuthContext';
-import EventForm from './eventForm';
 
-const EventManagement = () => {
+/**
+ * Hub de Gestion et Catalogue des Événements (eventManagement)
+ * Recherche instantanée, filtres dynamiques, tri, bascule grille/liste, cartes 16:9 immersives.
+ */
+export const EventManagement = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user, token } = useAuthContext();
-  const [filter, setFilter] = useState('All');
+
+  // États de recherche, filtres, tri et vue
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filter, setFilter] = useState('All'); // 'All' | 'Active' | 'Pending' | 'Past'
+  const [sortBy, setSortBy] = useState('date-desc'); // 'date-desc' | 'date-asc' | 'title-asc'
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  
-  // Utilisation du hook pour récupérer les événements
+  const [copiedEventId, setCopiedEventId] = useState(null);
+
   const { events, loading, error, total, refetch } = useGetUserEvents(
     user?._id || user?.id,
     token,
     true
   );
-  
-  // Utilisation du hook pour la suppression
-  const { deleteEventById, loading: deleteLoading, error: deleteError } = useDeleteEvent(
+
+  const { deleteEventById, loading: deleteLoading } = useDeleteEvent(
     token,
-    (deletedId, response) => {
-      console.log('Événement supprimé avec succès:', deletedId);
+    () => {
       refetch();
       setShowDeleteConfirm(null);
     }
   );
 
-  // Rafraîchir les événements quand l'utilisateur change
   useEffect(() => {
     if (user && token) {
       refetch();
     }
-  }, [user, token, refetch]);
+  }, [user, token, refetch, location.key, location.state]);
 
-  // Logique de filtrage des événements
-  const filteredEvents = events.filter(event => {
-    if (filter === 'All') return true;
-    if (filter === 'Active') {
-      return event.status === 'en cours'
-    }
-    if (filter === 'Past') {
-      return event.status === 'terminer';
-    }
-    if (filter === 'Pending') {
-      return event.status === 'en attente'
-    }
-    return true;
-  });
+  // Compteurs de statuts
+  const statusCounts = useMemo(() => {
+    const counts = { All: events.length, Active: 0, Pending: 0, Past: 0 };
+    events.forEach((ev) => {
+      const st = (ev.status || '').toLowerCase();
+      if (st === 'en cours' || st === 'active' || st === 'activé') counts.Active += 1;
+      else if (st === 'terminer' || st === 'completed' || st === 'terminé') counts.Past += 1;
+      else counts.Pending += 1;
+    });
+    return counts;
+  }, [events]);
 
-  // Options de filtrage
+  // Filtrage et Tri combinés
+  const processedEvents = useMemo(() => {
+    return events
+      .filter((event) => {
+        const title = (event.titre || event.title || event.name || '').toLowerCase();
+        const description = (event.description || '').toLowerCase();
+        const locationStr = (event.lieu || '').toLowerCase();
+        const search = searchTerm.toLowerCase().trim();
+
+        // 1. Filtre par recherche
+        const matchesSearch = !search || title.includes(search) || description.includes(search) || locationStr.includes(search);
+
+        // 2. Filtre par statut
+        const st = (event.status || '').toLowerCase();
+        let matchesStatus = true;
+        if (filter === 'Active') matchesStatus = st === 'en cours' || st === 'active' || st === 'activé';
+        else if (filter === 'Past') matchesStatus = st === 'terminer' || st === 'completed' || st === 'terminé';
+        else if (filter === 'Pending') matchesStatus = st === 'en attente' || st === 'pending';
+
+        return matchesSearch && matchesStatus;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'title-asc') {
+          return (a.titre || '').localeCompare(b.titre || '');
+        }
+        const dateA = new Date(a.DateDebut || a.date || 0).getTime();
+        const dateB = new Date(b.DateDebut || b.date || 0).getTime();
+        if (sortBy === 'date-asc') return dateA - dateB;
+        return dateB - dateA;
+      });
+  }, [events, searchTerm, filter, sortBy]);
+
   const filterOptions = [
-    { key: 'All', label: 'Tous' },
-    { key: 'Active', label: 'Actifs' },
-    { key: 'Past', label: 'Passés' },
-    { key: 'Pending', label: 'En attente' }
+    { key: 'All', label: 'Tous', count: statusCounts.All },
+    { key: 'Active', label: 'En cours', count: statusCounts.Active, badgeClass: 'bg-emerald-500/15 text-emerald-600' },
+    { key: 'Pending', label: 'À venir / En attente', count: statusCounts.Pending, badgeClass: 'bg-amber-500/15 text-amber-600' },
+    { key: 'Past', label: 'Passés', count: statusCounts.Past, badgeClass: 'bg-gray-200 text-gray-600' },
   ];
 
-  // Fonction pour obtenir une icône événementielle basée sur le titre et la description
   const getEventAvatar = (event) => {
     const title = (event.titre || event.title || event.name || '').toLowerCase();
     const description = (event.description || '').toLowerCase();
     const combinedText = title + ' ' + description;
-    
-    // Catégories d'événements avec leurs icônes et couleurs
+
     const categories = [
-      { keywords: ['gala', 'soirée', 'prestige', 'luxe', 'dîner'], icon: <PartyPopper size={32} />, bgGradient: 'from-purple-500 to-pink-500', color: 'text-purple-100' },
-      { keywords: ['conférence', 'séminaire', 'forum', 'congrès', 'tech', 'webinar'], icon: <Briefcase size={32} />, bgGradient: 'from-blue-500 to-indigo-500', color: 'text-blue-100' },
-      { keywords: ['concert', 'festival', 'musique', 'dj', 'live'], icon: <Music size={32} />, bgGradient: 'from-red-500 to-orange-500', color: 'text-red-100' },
-      { keywords: ['sport', 'match', 'tournoi', 'competition', 'marathon'], icon: <Trophy size={32} />, bgGradient: 'from-green-500 to-emerald-500', color: 'text-green-100' },
-      { keywords: ['formation', 'atelier', 'workshop', 'masterclass', 'cours'], icon: <GraduationCap size={32} />, bgGradient: 'from-cyan-500 to-teal-500', color: 'text-cyan-100' },
-      { keywords: ['anniversaire', 'fête', 'célébration', 'birthday'], icon: <Gift size={32} />, bgGradient: 'from-pink-500 to-rose-500', color: 'text-pink-100' },
-      { keywords: ['corporate', 'entreprise', 'business', 'networking', 'réseautage'], icon: <Globe size={32} />, bgGradient: 'from-slate-500 to-gray-500', color: 'text-slate-100' },
-      { keywords: ['mariage', 'wedding', 'noces', 'alliance'], icon: <Heart size={32} />, bgGradient: 'from-red-400 to-pink-400', color: 'text-red-100' },
-      { keywords: ['café', 'meeting', 'rencontre', 'coworking'], icon: <Coffee size={32} />, bgGradient: 'from-amber-500 to-yellow-500', color: 'text-amber-100' },
-      { keywords: ['spectacle', 'théâtre', 'comédie', 'show'], icon: <Mic size={32} />, bgGradient: 'from-violet-500 to-purple-500', color: 'text-violet-100' },
-      { keywords: ['cinéma', 'film', 'projection', 'première'], icon: <Film size={32} />, bgGradient: 'from-indigo-600 to-blue-600', color: 'text-indigo-100' },
-      { keywords: ['exposition', 'art', 'galerie', 'vernissage', 'peinture'], icon: <Camera size={32} />, bgGradient: 'from-amber-600 to-orange-600', color: 'text-amber-100' },
-      { keywords: ['innovation', 'startup', 'hackathon', 'digital'], icon: <Zap size={32} />, bgGradient: 'from-yellow-500 to-orange-500', color: 'text-yellow-100' }
+      { keywords: ['gala', 'soirée', 'prestige', 'luxe', 'dîner'], icon: <PartyPopper size={28} />, bgGradient: 'from-purple-600 to-pink-600' },
+      { keywords: ['conférence', 'séminaire', 'forum', 'congrès', 'tech', 'webinar'], icon: <Briefcase size={28} />, bgGradient: 'from-blue-600 to-indigo-700' },
+      { keywords: ['concert', 'festival', 'musique', 'dj', 'live'], icon: <Music size={28} />, bgGradient: 'from-orange-600 to-[#FF5005]' },
+      { keywords: ['sport', 'match', 'tournoi', 'competition', 'marathon'], icon: <Trophy size={28} />, bgGradient: 'from-emerald-600 to-teal-700' },
+      { keywords: ['formation', 'atelier', 'workshop', 'masterclass'], icon: <GraduationCap size={28} />, bgGradient: 'from-cyan-600 to-blue-700' },
+      { keywords: ['anniversaire', 'fête', 'célébration'], icon: <Gift size={28} />, bgGradient: 'from-pink-500 to-rose-600' },
+      { keywords: ['mariage', 'wedding', 'noces'], icon: <Heart size={28} />, bgGradient: 'from-rose-500 to-pink-600' },
+      { keywords: ['innovation', 'startup', 'hackathon'], icon: <Zap size={28} />, bgGradient: 'from-amber-500 to-orange-600' }
     ];
-    
-    // Chercher une catégorie correspondante
+
     for (const category of categories) {
-      if (category.keywords.some(keyword => combinedText.includes(keyword))) {
-        return { ...category, isCustom: true };
+      if (category.keywords.some((keyword) => combinedText.includes(keyword))) {
+        return category;
       }
     }
-    
-    // Icône par défaut avec thème événementiel
+
     return {
-      icon: <CalendarDays size={32} />,
-      bgGradient: 'from-blue-400 to-blue-600',
-      color: 'text-blue-100',
-      isCustom: false
+      icon: <CalendarDays size={28} />,
+      bgGradient: 'from-slate-800 to-slate-900',
     };
   };
 
-  // Fonction pour obtenir un emoji aléatoire comme fallback
-  const getRandomEmoji = (title) => {
-    const emojis = ['🎉', '🎊', '✨', '⭐', '🌟', '💫', '🎈', '🎯', '🏆', '🎭', '🎪', '🎨', '🎬', '📸', '🎵', '🎶', '💼', '🤝', '🌍', '🚀'];
-    const index = title.length % emojis.length;
-    return emojis[index];
-  };
-
-  // Fonction pour récupérer l'URL de l'image de l'événement
   const getEventImageUrl = (event) => {
     if (!event) return null;
-
-    // Récupérer le chemin de l'image depuis le champ image
     const imagePath = event.image;
-
     if (!imagePath) return null;
-
-    // Si c'est déjà une URL complète (commence par http), la retourner telle quelle
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
-
-    // Si c'est un chemin relatif (commence par /), construire l'URL complète
     if (imagePath.startsWith('/')) {
       return `http://localhost:3000${imagePath}`;
     }
-
-    // Sinon, essayer de construire l'URL complète (backend écoute sur le port 3000)
     return `http://localhost:3000/uploads/${imagePath}`;
-  };
-
-  // Fonction pour gérer la suppression
-  const handleDeleteClick = (eventId) => {
-    setShowDeleteConfirm(eventId);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (showDeleteConfirm) {
-      await deleteEventById(showDeleteConfirm);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setShowDeleteConfirm(null);
   };
 
   const openManageTab = (event) => {
@@ -150,317 +149,491 @@ const EventManagement = () => {
     window.open(manageUrl, '_blank', 'noopener,noreferrer');
   };
 
-  // Fonction pour formater la date
+  const copyPublicLink = (event) => {
+    const eventId = event._id || event.id;
+    const isPublic = event.eventType === 'public';
+    const publicUrl = isPublic
+      ? `${window.location.origin}/event/${eventId}/tickets`
+      : `${window.location.origin}/rsvp/${eventId}`;
+
+    navigator.clipboard.writeText(publicUrl);
+    setCopiedEventId(eventId);
+    setTimeout(() => setCopiedEventId(null), 2500);
+  };
+
   const formatDate = (dateString) => {
-    if (!dateString) return 'Date non définie';
-    if (dateString === 'Prochainement') return dateString;
-    
+    if (!dateString) return 'Date à définir';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
-    
     return date.toLocaleDateString('fr-FR', {
       day: 'numeric',
-      month: 'long',
-      year: 'numeric'
+      month: 'short',
+      year: 'numeric',
     });
   };
 
-  // Fonction pour formater le statut avec le bon libellé en français
-  const getStatusLabel = (status) => {
-    const statusLower = (status || '').toLowerCase();
-    if (statusLower === 'active' ) {
-      return 'Actif';
+  const getStatusStyle = (status) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'en cours' || s === 'active' || s === 'activé') {
+      return {
+        label: 'En cours',
+        badge: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+        dot: 'bg-emerald-500',
+      };
     }
-    if (statusLower === statusLower === 'terminé') {
-      return 'Passé'; 
+    if (s === 'terminer' || s === 'completed' || s === 'terminé') {
+      return {
+        label: 'Terminé',
+        badge: 'bg-gray-100 text-gray-600 border-gray-200',
+        dot: 'bg-gray-400',
+      };
     }
-    if (statusLower === 'en attente') {
-      return 'En attente';
-    }
-    return status || 'En attente';
+    return {
+      label: 'À venir',
+      badge: 'bg-amber-50 text-amber-600 border-amber-200',
+      dot: 'bg-amber-500',
+    };
   };
 
-  // Fonction pour obtenir les couleurs du statut
-  const getStatusColor = (status) => {
-    const statusLower = (status || '').toLowerCase();
-    if (statusLower === 'en cours' || statusLower === 'ongoing' || statusLower === 'activé') {
-      return { bg: 'bg-green-100', text: 'text-green-600', dot: 'bg-green-500' };
-    }
-    if (statusLower === 'terminer' || statusLower === 'completed' || statusLower === 'terminé') {
-      return { bg: 'bg-red-100', text: 'text-red-400', dot: 'bg-red-300' };
-    }
-    if (statusLower === 'pending' || statusLower === 'en attente' || statusLower === 'draft' || statusLower === 'drafts') {
-      return { bg: 'bg-amber-100', text: 'text-amber-600', dot: 'bg-amber-500' };
-    }
-    return { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-500' };
-  };
-
-  // Fonction pour formater le nombre d'invités
-  const formatGuests = (event) => {
-    const confirmed = event.confirmedGuests || event.participants || event.attendees || 0;
-    const total = event.totalGuests || event.capacity || event.maxAttendees || 0;
-    
-    if (total === 0) return `${confirmed} invités`;
-    return `${confirmed} / ${total} invités confirmés`;
-  };
-
-  // Affichage du chargement
   if (loading && events.length === 0) {
     return (
-      <div className="px-29 mt-10 font">
-        <div className="flex justify-center items-center h-96">
-          <div className="text-center">
-            <Loader size={48} className="animate-spin text-blue-600 mx-auto mb-4" />
-            <p className="text-slate-600 font-medium">Chargement de vos événements...</p>
-          </div>
-        </div>
+      <div className="py-20 flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 border-4 border-[#FF5005]/20 border-t-[#FF5005] rounded-full animate-spin" />
+        <p className="text-xs font-black uppercase tracking-widest text-gray-400">
+          Chargement de votre catalogue d'événements...
+        </p>
       </div>
     );
-  }
-
-  // Affichage de l'erreur
-  if (error) {
-    return (
-      <div className="px-29 mt-10 font">
-        <div className="flex justify-center items-center h-96">
-          <div className="text-center max-w-md">
-            <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 font-bold mb-2">Erreur de chargement</p>
-            <p className="text-slate-500 mb-6">{error}</p>
-            <button 
-              onClick={() => refetch()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-            >
-              Réessayer
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const ModalOpen = () => {
-    setIsModalOpen(true)
-  }
-  const ModalClose = () => {
-    setIsModalOpen(false)
   }
 
   return (
-    <div className="px-29 mt-10 font">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900 tracking-tight">Gestion des Événements</h1>
-          <p className="text-slate-500 font-semibold mt-1">
-            Supervisez et organisez vos événements prestigieux en un coup d'œil.
-            {total > 0 && <span className="ml-2 text-blue-600">({total} événements)</span>}
-          </p>
-        </div>
+    <div className="space-y-8 font-sans text-left">
+      
+      {/* ======================================================= */}
+      {/* BARRE D'OUTILS ET CONTRÔLES SUPÉRIEURS                 */}
+      {/* ======================================================= */}
+      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-xs space-y-5">
         
-        <div className="flex items-center gap-4 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
-          {filterOptions.map((opt) => (
-            <button
-              key={opt.key}
-              onClick={() => setFilter(opt.key)}
-              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${
-                filter === opt.key 
-                ? 'bg-blue-600 text-white shadow-md' 
-                : 'text-slate-500 hover:bg-slate-100 border-1 border-gray-200 transition duration-300'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-          <button 
-          onClick={ModalOpen}
-          className="ml-4 bg-blue-600 text-white px-6 py-2.5 rounded-xl    text-sm font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">
-            <Plus size={18} />
-            Créer un événement
-          </button>
+        {/* Ligne 1 : Titre & Bouton Nouveau */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#FF5005] block">
+              Supervision & Billetterie
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+              Catalogue des Événements
+            </h1>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Gérez vos invitations privées et vos billetteries publiques certifiées.
+            </p>
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.02, boxShadow: '0 10px 25px -5px rgba(255, 80, 5, 0.3)' }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/dashboard/evenement/create')}
+            className="px-6 py-3.5 bg-gradient-to-r from-[#FF5005] to-[#FF7A00] hover:from-[#ff5e19] hover:to-[#ff8519] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 transition cursor-pointer self-start sm:self-auto"
+          >
+            <Plus size={16} />
+            <span>Créer un Événement</span>
+          </motion.button>
         </div>
+
+        {/* Ligne 2 : Barre de Recherche, Filtres & Basculeur de Vue */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pt-2 border-t border-gray-50">
+          
+          {/* Recherche */}
+          <div className="relative flex-1 max-w-md">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Rechercher par titre, ville, mot-clé..."
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50/80 border border-gray-200/80 rounded-2xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#FF5005] focus:bg-white transition"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600 font-bold"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Filtres de statut */}
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-gray-50 rounded-2xl border border-gray-200/60 overflow-x-auto">
+            {filterOptions.map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setFilter(opt.key)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  filter === opt.key
+                    ? 'bg-white text-gray-900 shadow-sm border border-gray-200/80 font-black'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                <span>{opt.label}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    filter === opt.key ? 'bg-orange-500/10 text-[#FF5005]' : 'bg-gray-200 text-gray-600'
+                  }`}
+                >
+                  {opt.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Tri & Bascule Grille/Liste */}
+          <div className="flex items-center gap-2 self-end lg:self-auto">
+            
+            {/* Menu de Tri */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 focus:outline-none focus:border-[#FF5005] cursor-pointer"
+            >
+              <option value="date-desc">Plus Récents</option>
+              <option value="date-asc">Date Proche</option>
+              <option value="title-asc">Titre (A-Z)</option>
+            </select>
+
+            {/* Bascule Vue Grille / Table */}
+            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl p-1">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === 'grid' ? 'bg-white text-[#FF5005] shadow-xs' : 'text-gray-400 hover:text-gray-700'
+                }`}
+                title="Vue en Grille de Cartes"
+              >
+                <LayoutGrid size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === 'table' ? 'bg-white text-[#FF5005] shadow-xs' : 'text-gray-400 hover:text-gray-700'
+                }`}
+                title="Vue en Liste Compacte"
+              >
+                <List size={16} />
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
-      {/* formulaire de création d'événement */}
-      {isModalOpen && (
-        <div onClick={ModalClose} className="modal fixed inset-0 bg-black/20 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
-          <div onClick={(e) => e.stopPropagation()} className="modal-content w-full max-w-3xl p-8">
-            <EventForm closeModal={ModalClose} />
+
+      {/* ======================================================= */}
+      {/* ÉTAT VIDE                                               */}
+      {/* ======================================================= */}
+      {processedEvents.length === 0 && (
+        <div className="bg-white rounded-3xl p-12 sm:p-16 border border-dashed border-gray-200 text-center space-y-4 shadow-xs">
+          <div className="w-16 h-16 rounded-3xl bg-orange-500/10 text-[#FF5005] flex items-center justify-center mx-auto border border-orange-500/20 shadow-sm">
+            <Calendar size={32} />
+          </div>
+          <div className="space-y-1 max-w-md mx-auto">
+            <h3 className="text-xl font-black text-gray-900">
+              {searchTerm ? "Aucun résultat trouvé" : "Aucun événement dans cette section"}
+            </h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              {searchTerm
+                ? `Aucun événement ne correspond au terme "${searchTerm}". Essayez un autre mot-clé.`
+                : "Commencez dès maintenant à créer votre première réception privée ou votre billetterie publique en quelques clics."}
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <button
+              onClick={() => navigate('/dashboard/evenement/create')}
+              className="px-6 py-3 bg-[#FF5005] hover:bg-[#ff6420] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/25 inline-flex items-center gap-2 transition cursor-pointer"
+            >
+              <Plus size={16} />
+              <span>Créer mon premier événement</span>
+            </button>
           </div>
         </div>
       )}
-      {/* Aucun événement */}
-      {filteredEvents.length === 0 && (
-        <div className="text-center py-20 bg-white rounded-3xl border border-slate-100">
-          <Calendar size={64} className="text-slate-300 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-slate-700 mb-2">Aucun événement trouvé</h3>
-          <p className="text-slate-500">
-            {events.length === 0 
-              ? "Vous n'avez pas encore créé d'événement." 
-              : `Aucun événement ${filter === 'Pending' ? 'en attente' : filter === 'Active' ? 'actif' : filter === 'Past' ? 'passé' : ''}.`}
-          </p>
-          {events.length === 0 && (
-            <button onClick={ModalOpen} className="mt-6 bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 mx-auto hover:bg-blue-700 transition-colors">
-              <Plus size={18} />
-              Créer votre premier événement
-            </button>
-          )}
+
+      {/* ======================================================= */}
+      {/* 1. VUE EN GRILLE DE CARTES (GRID VIEW)                  */}
+      {/* ======================================================= */}
+      {viewMode === 'grid' && processedEvents.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {processedEvents.map((event, index) => {
+            const eventId = event._id || event.id;
+            const eventTitle = event.titre || event.title || event.name || 'Événement sans titre';
+            const eventDesc = event.description;
+            const eventLoc = event.lieu || 'Lieu communiqué aux inscrits';
+            const eventDate = formatDate(event.DateDebut || event.date);
+            const eventImg = getEventImageUrl(event);
+            const avatar = getEventAvatar(event);
+            const status = getStatusStyle(event.status);
+            const isPublic = event.eventType === 'public';
+
+            return (
+              <motion.div
+                key={eventId}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: index * 0.05 }}
+                whileHover={{ y: -5, boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.08)' }}
+                className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xs hover:border-gray-200 transition-all flex flex-col justify-between group text-left"
+              >
+                {/* Couverture Visuelle 16:9 */}
+                <div className="relative h-48 bg-gray-900 overflow-hidden flex items-center justify-center">
+                  {eventImg ? (
+                    <img
+                      src={eventImg}
+                      alt={eventTitle}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className={`w-full h-full bg-gradient-to-br ${avatar.bgGradient} flex items-center justify-center text-white/80 group-hover:scale-110 transition-transform duration-300`}>
+                      {avatar.icon}
+                    </div>
+                  )}
+
+                  {/* Gradient Overlay sombre */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                  {/* Badges Flottants */}
+                  <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-2">
+                    {/* Badge Type (Public / Privé) */}
+                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-white font-extrabold text-[10px] uppercase tracking-wider rounded-full border border-white/20 flex items-center gap-1">
+                      {isPublic ? <Globe size={11} className="text-[#FF5005]" /> : <ShieldCheck size={11} className="text-blue-400" />}
+                      <span>{isPublic ? 'Billetterie B2C' : 'Privé VIP'}</span>
+                    </span>
+
+                    {/* Badge Statut */}
+                    <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full shadow-xs border border-white/40">
+                      <div className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                      <span className="text-[10px] font-black uppercase tracking-wider text-gray-800">
+                        {status.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Horaires et Catégorie en bas de photo */}
+                  <div className="absolute bottom-3 left-3.5 right-3.5 flex items-center justify-between text-white text-xs font-bold">
+                    <span className="flex items-center gap-1 text-[11px] text-slate-200">
+                      <Clock size={12} className="text-[#FF5005]" />
+                      {event.heureDebut || '19:00'} - {event.heureFin || '23:30'}
+                    </span>
+                    {event.categorie && (
+                      <span className="text-[10px] uppercase font-extrabold bg-white/20 px-2 py-0.5 rounded-md backdrop-blur-sm">
+                        {event.categorie}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Corps de la Carte */}
+                <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-black text-gray-900 line-clamp-1 group-hover:text-[#FF5005] transition-colors leading-snug">
+                      {eventTitle}
+                    </h3>
+                    {eventDesc && (
+                      <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed">
+                        {eventDesc}
+                      </p>
+                    )}
+
+                    <div className="space-y-1.5 pt-2 text-xs text-gray-600 font-medium">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Calendar size={14} className="text-[#FF5005] shrink-0" />
+                        <span className="font-bold">{eventDate}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <MapPin size={14} className="text-blue-500 shrink-0" />
+                        <span className="truncate">{eventLoc}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Barre d'actions rapides */}
+                  <div className="pt-4 border-t border-gray-100 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => openManageTab(event)}
+                      className="flex-1 py-2.5 px-4 bg-[#0B1727] hover:bg-[#FF5005] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    >
+                      <span>Gérer le Hub</span>
+                      <ArrowRight size={14} />
+                    </button>
+
+                    {/* Voir la page publique si B2C */}
+                    {isPublic && (
+                      <Link
+                        to={`/event/${eventId}/tickets`}
+                        target="_blank"
+                        className="p-2.5 text-gray-500 hover:text-[#FF5005] hover:bg-orange-50 rounded-xl transition border border-gray-100 cursor-pointer"
+                        title="Ouvrir la billetterie publique en direct"
+                      >
+                        <ExternalLink size={16} />
+                      </Link>
+                    )}
+
+                    {/* Copier le lien */}
+                    <button
+                      onClick={() => copyPublicLink(event)}
+                      className="p-2.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition border border-gray-100 cursor-pointer"
+                      title="Copier le lien public"
+                    >
+                      {copiedEventId === eventId ? (
+                        <Check size={16} className="text-emerald-500" />
+                      ) : (
+                        <Copy size={16} />
+                      )}
+                    </button>
+
+                    {/* Supprimer */}
+                    <button
+                      onClick={() => setShowDeleteConfirm(eventId)}
+                      className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition border border-gray-100 cursor-pointer"
+                      title="Supprimer l'événement"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
-      {/* Events Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredEvents.map((event) => {
-          const statusStyle = getStatusColor(event.status);
-          const statusLabel = getStatusLabel(event.status);
-          const eventTitle = event.titre || event.title || event.name;
-          const eventDescription = event.description;
-          const eventLocation = event.lieu;
-          const eventDate = formatDate(event.date || event.startDate || event.scheduledDate);
-          const eventAvatar = getEventAvatar(event);
-          const randomEmoji = getRandomEmoji(eventTitle);
-          const eventImageUrl = getEventImageUrl(event);
-          
-          return (
-            <div key={event.id || event._id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-300 group">
-              {/* Avatar Section avec gradient ou image */}
-              <div className={`relative h-56 ${eventImageUrl ? 'bg-slate-100' : `bg-gradient-to-br ${eventAvatar.bgGradient}`} overflow-hidden flex items-center justify-center`}>
-                {eventImageUrl ? (
-                  <img
-                    src={eventImageUrl}
-                    alt={eventTitle || 'Image de l\'événement'}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                ) : (
-                  <>
-                    {/* Pattern de fond décoratif */}
-                    <div className="absolute inset-0 opacity-10">
-                      <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-16 -translate-y-16"></div>
-                      <div className="absolute bottom-0 right-0 w-40 h-40 bg-white rounded-full translate-x-20 translate-y-20"></div>
-                      <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 opacity-30"></div>
-                    </div>
+      {/* ======================================================= */}
+      {/* 2. VUE EN LISTE COMPACTE (TABLE VIEW)                   */}
+      {/* ======================================================= */}
+      {viewMode === 'table' && processedEvents.length > 0 && (
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gray-50/80 border-b border-gray-100 text-gray-400 uppercase font-black tracking-wider text-[10px]">
+                <tr>
+                  <th className="py-4 px-6">Événement</th>
+                  <th className="py-4 px-4">Statut</th>
+                  <th className="py-4 px-4">Date & Heure</th>
+                  <th className="py-4 px-4">Lieu</th>
+                  <th className="py-4 px-4">Format</th>
+                  <th className="py-4 px-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {processedEvents.map((event) => {
+                  const eventId = event._id || event.id;
+                  const eventTitle = event.titre || event.title || event.name;
+                  const eventDate = formatDate(event.DateDebut || event.date);
+                  const eventLoc = event.lieu || 'Lieu communiqué';
+                  const status = getStatusStyle(event.status);
+                  const isPublic = event.eventType === 'public';
 
-                    {/* Avatar Central */}
-                    <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="bg-white/20 backdrop-blur-md rounded-full p-6 mb-3 shadow-xl border border-white/30">
-                        {React.cloneElement(eventAvatar.icon, { 
-                          className: `${eventAvatar.color} drop-shadow-lg`,
-                          size: 48 
-                        })}
-                      </div>
-                      <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
-                        <span className="text-2xl">{randomEmoji}</span>
-                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Événement</span>
-                      </div>
-                    </div>
-                  </>
-                )}
+                  return (
+                    <tr key={eventId} className="hover:bg-gray-50/50 transition">
+                      <td className="py-4 px-6 font-black text-gray-900 text-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-[#FF5005] flex items-center justify-center font-bold shrink-0">
+                            {eventTitle[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="block line-clamp-1">{eventTitle}</span>
+                            <span className="text-[11px] text-gray-400 font-normal">{event.categorie || 'Général'}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${status.badge}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-gray-700 font-bold">
+                        <div>{eventDate}</div>
+                        <div className="text-[11px] text-gray-400 font-normal">{event.heureDebut || '19:00'}</div>
+                      </td>
+                      <td className="py-4 px-4 text-gray-600 font-medium max-w-xs truncate">
+                        {eventLoc}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="text-[11px] font-extrabold text-gray-600 uppercase">
+                          {isPublic ? 'Billetterie B2C' : 'Privé VIP'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openManageTab(event)}
+                            className="px-3.5 py-1.5 bg-[#0B1727] hover:bg-[#FF5005] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer"
+                          >
+                            Gérer
+                          </button>
+                          <button
+                            onClick={() => setShowDeleteConfirm(eventId)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-                {/* Status Badge */}
-                <div className="absolute top-6 right-6 flex items-center gap-2 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full shadow-sm">
-                  <div className={`w-2 h-2 rounded-full ${statusStyle.dot}`} />
-                  <span className={`text-xs font-bold tracking-wide uppercase ${statusStyle.text}`}>
-                    {statusLabel}
-                  </span>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-8">
-                <h3 className="text-2xl font-black text-[#017EF7] leading-tight mb-2 line-clamp-2">
-                  {eventTitle}
-                </h3>
-                {eventDescription && (
-                  <p className="text-slate-600 text-sm mb-6 line-clamp-2">
-                    {eventDescription}
-                  </p>
-                )}
-                <div className="space-y-3 mb-8">
-                  <div className="flex items-center gap-3 text-slate-500">
-                    <Calendar size={16} className="text-blue-500 shrink-0" />
-                    <span className="text-sm font-medium">{eventDate}</span>
-                  </div>
-                  <div className="flex items-start gap-3 text-slate-500">
-                    <MapPin size={16} className="text-blue-500 shrink-0 mt-0.5" />
-                    <span className="text-sm font-medium line-clamp-1">{eventLocation}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-slate-500">
-                    <Users size={16} className="text-blue-500 shrink-0" />
-                    <span className="text-sm font-medium">{formatGuests(event)}</span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <button onClick={() => openManageTab(event)} className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md hover:shadow-lg">
-                    Gérer
-                  </button>
-                  <button className="p-2.5 text-orange-500 hover:bg-orange-50 rounded-xl transition-colors">
-                    <BarChart2 size={20} />
-                  </button>
-                  <button className="p-2.5 text-green-500 hover:bg-green-50 rounded-xl transition-colors">
-                    <Edit3 size={20} />
-                  </button>
-                  <button 
-                    onClick={() => handleDeleteClick(event.id || event._id)}
-                    className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                    disabled={deleteLoading}
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Modal de confirmation de suppression */}
+      {/* ======================================================= */}
+      {/* MODAL DE CONFIRMATION DE SUPPRESSION                    */}
+      {/* ======================================================= */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-red-100 p-3 rounded-full">
-                <Trash2 size={24} className="text-red-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900">Confirmer la suppression</h3>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl text-center space-y-4"
+          >
+            <div className="w-14 h-14 rounded-3xl bg-red-50 text-red-500 flex items-center justify-center mx-auto border border-red-100">
+              <Trash2 size={26} />
             </div>
-            
-            <p className="text-slate-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer cet événement ? Cette action est irréversible.
-            </p>
-            
-            {deleteError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                <p className="text-red-600 text-sm">{deleteError}</p>
-              </div>
-            )}
-            
-            <div className="flex gap-3">
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-gray-900">Supprimer cet événement ?</h3>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Cette action est irréversible. Les invitations et billets associés seront révoqués.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
               <button
-                onClick={handleConfirmDelete}
-                disabled={deleteLoading}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {deleteLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader size={18} className="animate-spin" />
-                    <span>Suppression...</span>
-                  </div>
-                ) : (
-                  'Supprimer'
-                )}
-              </button>
-              <button
-                onClick={handleCancelDelete}
-                disabled={deleteLoading}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors"
+                onClick={() => setShowDeleteConfirm(null)}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-extrabold uppercase tracking-wider transition cursor-pointer"
               >
                 Annuler
               </button>
+              <button
+                onClick={async () => {
+                  if (showDeleteConfirm) {
+                    await deleteEventById(showDeleteConfirm);
+                  }
+                }}
+                disabled={deleteLoading}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-xs font-extrabold uppercase tracking-wider transition disabled:opacity-50 cursor-pointer shadow-lg shadow-red-500/20"
+              >
+                {deleteLoading ? 'Suppression...' : 'Supprimer'}
+              </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
+
     </div>
   );
 };

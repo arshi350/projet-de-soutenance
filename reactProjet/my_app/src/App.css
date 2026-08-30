@@ -1,41 +1,180 @@
 @import "tailwindcss";
 
-
-body{
-    font-family: 'Poppins';
+@theme {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-brand-orange: #FF5005;
+  --color-brand-navy: #0B1727;
+  --color-brand-navy-light: #1A2C4B;
+  --color-brand-slate: #111827;
+  --color-brand-slate-card: #1E293B;
+  --color-brand-emerald: #10B981;
+  --color-brand-gold: #EFB810;
 }
 
-.font{
-     font-family: 'Poppins';
+:root {
+  --color-primary-orange: #FF5005;
+  --color-primary-orange-glow: rgba(255, 80, 5, 0.4);
+  --color-navy-dark: #0B1727;
+  --color-navy-surface: #1A2C4B;
+  --color-slate-dark: #111827;
+  --color-slate-card: #1E293B;
+  --color-emerald-accent: #10B981;
+  --color-gold-accent: #EFB810;
+  
+  --ease-prestige: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* Animations pour les toasts */
-@keyframes enter {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
+html {
+  font-size: 87.5%; /* Reduces base 16px rem to 14px (~12.5% reduction for compact 100% zoom view) */
+}
+
+@media (min-width: 1440px) {
+  html {
+    font-size: 90%; /* Smooth scaled density on wide desktop screens */
   }
-  to {
-    opacity: 1;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utilitaires Glassmorphism */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-panel-dark {
+  background: rgba(11, 23, 39, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-modal {
+  background: rgba(11, 23, 39, 0.92);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px -10px rgba(255, 80, 5, 0.15);
+}
+
+/* Glow Effects */
+.glow-orange {
+  box-shadow: 0 10px 30px -5px rgba(255, 80, 5, 0.45);
+}
+
+.glow-orange-subtle {
+  box-shadow: 0 0 20px 0 rgba(255, 80, 5, 0.2);
+}
+
+.glow-gold {
+  box-shadow: 0 10px 30px -5px rgba(239, 184, 16, 0.4);
+}
+
+.glow-emerald {
+  box-shadow: 0 10px 30px -5px rgba(16, 185, 129, 0.35);
+}
+
+.glow-navy {
+  box-shadow: 0 20px 40px -15px rgba(11, 23, 39, 0.5);
+}
+
+/* Animations de transition */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
     transform: scale(1);
   }
-}
-
-@keyframes leave {
-  from {
+  50% {
     opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.9);
+    transform: scale(1.05);
   }
 }
 
-.animate-enter {
-  animation: enter 0.2s ease-out;
+@keyframes scanLaser {
+  0% { top: 0%; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
 }
 
-.animate-leave {
-  animation: leave 0.15s ease-in forwards;
+@keyframes marqueeSlow {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes floatSmooth {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+.animate-scan-laser {
+  animation: scanLaser 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marqueeSlow 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.animate-float {
+  animation: floatSmooth 4s ease-in-out infinite;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FF5005;
+}
+
+/* Perspectives 3D */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+/* Gradient Mesh Classes */
+.bg-mesh-dark {
+  background-color: #0B1727;
+  background-image: 
+    radial-gradient(at 10% 20%, rgba(255, 80, 5, 0.18) 0px, transparent 50%),
+    radial-gradient(at 90% 80%, rgba(30, 111, 217, 0.2) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(11, 23, 39, 0.9) 0px, transparent 100%);
+}
+
+.bg-mesh-light {
+  background-color: #F8FAFC;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(255, 80, 5, 0.06) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(30, 111, 217, 0.05) 0px, transparent 50%);
 }

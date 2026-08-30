@@ -4,6 +4,8 @@ const QRCodeModel = require('../../models/invitesModel/qrcode');
 const invitesModel = require('../../models/invitesModel/invites');
 const { eventModel } = require('../../models/eventModels/event');
 
+const { generateAndUploadQRCode } = require('../../services/qrCloudinaryService');
+
 //generer les qrcode pour tous les invite
 const generateQrCode = async (req, res) => {
     try {
@@ -27,73 +29,19 @@ const generateQrCode = async (req, res) => {
         const generatedQRCodes = [];
         const errors = [];
         
-        // Parcourir chaque invité et générer son QR code
+        // Parcourir chaque invité et générer son QR code hébergé sur Cloudinary
         for (const invite of invites) {
             try {
-                // Vérifier si un QR code existe déjà pour cet invité
-                const existingQR = await QRCodeModel.findOne({ inviteId: invite._id });
-                
-                if (existingQR) {
-                    // Option 1: Ignorer et passer
-                    generatedQRCodes.push({
-                        inviteId: invite._id,
-                        status: 'already_exists',
-                        qrCode: existingQR
-                    });
-                    continue;
-                    
-                    // Option 2: Mettre à jour l'existant
-                    // const updatedQR = await updateQRCodeForInvite(invite);
-                }
-                
-                // Générer le contenu du QR code
-                const content = JSON.stringify({
-                    _id: invite._id,
-                    nom: invite.nom,
-                    prenom: invite.prenom,
-                    telephone: invite.telephone,
-                    email: invite.email,
-                    status: invite.status,
-                    idEvent: invite.idEvent,
-                    eventName: event.nom || event.name,
-                    eventDate: event.date
-                });
-                
-
-                // Générer le QR code en buffer PNG (binaire)
-                const qrCodeBuffer = await QRCode.toBuffer(content, {
-                    type: 'png',
-                    width: 300,
-                    margin: 2,
-                    errorCorrectionLevel: 'M'
-                });
-                // Générer aussi la dataURL pour affichage rapide (optionnel)
-                const qrCodeDataUrl = await QRCode.toDataURL(content, {
-                    width: 300,
-                    margin: 2,
-                    errorCorrectionLevel: 'M'
-                });
-
-                // Sauvegarder dans la base
-                const newQRCode = new QRCodeModel({
-                    inviteId: invite._id,
-                    eventId: eventId,
-                    qrCodeData: qrCodeBuffer,
-                    qrCodeDataUrl: qrCodeDataUrl,
-                    content: content,
-                    generatedAt: new Date()
-                });
-
-                const savedQRCode = await newQRCode.save();
+                const qrRes = await generateAndUploadQRCode(invite, eventId);
+                const savedDoc = await QRCodeModel.findOne({ inviteId: invite._id });
 
                 generatedQRCodes.push({
                     inviteId: invite._id,
                     eventId: eventId,
-                    inviteName: `${invite.prenom} ${invite.nom}`,
-                    status: 'success',
-                    qrCode: savedQRCode
+                    qrCodeUrl: qrRes.secureUrl,
+                    qrCode: savedDoc,
+                    status: 'success'
                 });
-                
             } catch (error) {
                 console.error(`Erreur pour l'invité ${invite._id}:`, error);
                 errors.push({
@@ -215,9 +163,39 @@ const getAllQrcodeImages = async (req, res) => {
             images
         });
     } catch (error) {
-        console.log(error);
+        console.error("Erreur getAllQrcodeImages:", error);
         return res.status(500).json({ message: "Erreur lors de la récupération des images des QR codes", error: error.message });
     }
 };
 
-module.exports = { generateQrCode, getQrcode, getQrcodeImage, getAllQrcodeImages };
+// Générer un QR code pour un invité spécifique
+const generateSingleQrCode = async (req, res) => {
+    try {
+        const { inviteId } = req.params;
+        const invite = await invitesModel.findById(inviteId);
+        if (!invite) {
+            return res.status(404).json({ success: false, message: "Invité non trouvé" });
+        }
+
+        const qrRes = await generateAndUploadQRCode(invite, invite.idEvent);
+        const savedDoc = await QRCodeModel.findOne({ inviteId: invite._id });
+
+        return res.status(200).json({
+            success: true,
+            message: `QR code généré avec succès pour ${invite.prenom} ${invite.nom}`,
+            qrCodeUrl: qrRes.secureUrl,
+            qrCode: savedDoc
+        });
+    } catch (err) {
+        console.error("Erreur generateSingleQrCode:", err);
+        return res.status(500).json({ success: false, message: "Erreur lors de la génération du QR code", error: err.message });
+    }
+};
+
+module.exports = { 
+    generateQrCode, 
+    generateSingleQrCode,
+    getQrcode, 
+    getQrcodeImage, 
+    getAllQrcodeImages 
+};

@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 
 const templateSchema = new mongoose.Schema({
   image: {
@@ -25,7 +25,7 @@ const templateSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  // Structure avancée pour les modifications Gemini
+  // Structure personnalisée du modèle
   structure: {
     type: Object,
     default: {

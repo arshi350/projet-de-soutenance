@@ -12,16 +12,16 @@ class ApiService {
   static String get baseUrl {
     const envHost = String.fromEnvironment('API_HOST', defaultValue: '');
     if (envHost.isNotEmpty) {
-      // Allow passing host with optional port, e.g. "192.168.1.10:3000"
+      // Allow passing host with optional port, e.g. "192.168.1.10:8000"
       return 'http://$envHost/api';
     }
 
-    if (kIsWeb) return 'http://localhost:3000/api';
-    if (Platform.isAndroid) return 'http://10.0.2.2:3000/api';
-    if (Platform.isIOS) return 'http://localhost:3000/api';
+    if (kIsWeb) return 'http://localhost:8000/api';
+    if (Platform.isAndroid) return 'http://10.0.2.2:8000/api';
+    if (Platform.isIOS) return 'http://localhost:8000/api';
 
     // Fallback to localhost for other platforms (desktop/emulator)
-    return 'http://localhost:3000/api';
+    return 'http://localhost:8000/api';
   }
 
   static String? _authToken;
@@ -71,7 +71,7 @@ class ApiService {
   // ✅ Récupération des événements (tous les événements récents)
   static Future<List<EventModel>> getEvents() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/event/getRecentvents'),
+      Uri.parse('$baseUrl/event/getRecentEvents'),
       headers: _headers,
     );
 
@@ -215,16 +215,21 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  // ✅ Statistiques événement
-  static Future<Map<String, dynamic>> getEventStats(String eventId) async {
+  // ✅ Statistiques complètes de scan d'événement (Graphes, Présents, Absents, Alertes)
+  static Future<Map<String, dynamic>> getScanStats(String eventId) async {
     final response = await http.get(
-      Uri.parse('$baseUrl/events/$eventId/stats'),
+      Uri.parse('$baseUrl/scan/stats/$eventId'),
       headers: _headers,
     );
 
     _checkResponse(response,
-        fallback: 'Erreur lors du chargement des statistiques');
+        fallback: 'Erreur lors du chargement des statistiques de scan');
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  // ✅ Statistiques événement
+  static Future<Map<String, dynamic>> getEventStats(String eventId) async {
+    return getScanStats(eventId);
   }
 }
 
@@ -236,5 +241,5 @@ class ApiException implements Exception {
 }
 
 class AuthException extends ApiException {
-  AuthException(String message) : super(message);
+  AuthException(super.message);
 }

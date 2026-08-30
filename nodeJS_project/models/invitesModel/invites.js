@@ -17,25 +17,23 @@ const inviteSchema = new mongoose.Schema({
     },
     telephone: {
         type: String,
-        unique: true,
+        sparse: true,
         trim: true,
         validate: {
             validator: function(v) {
-                // Si ni téléphone ni email n'est fourni, la validation échouera plus bas
                 if (!v) return true;
                 return /^6[25789]\d{7}$/.test(v);
             },
-            message: 'Veuillez entrer un numéro de téléphone valide'
+            message: 'Veuillez entrer un numéro de téléphone valide (ex: 690123456)'
         }
     },
     email: {
         type: String,
-        unique: true,
+        sparse: true,
         trim: true,
         lowercase: true,
         validate: {
             validator: function(v) {
-                // Si ni email ni téléphone n'est fourni, la validation échouera plus bas
                 if (!v) return true;
                 return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
             },
@@ -52,9 +50,10 @@ const inviteSchema = new mongoose.Schema({
         required: [true, 'Le status est obligatoire']
     },
     idEvent: {
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'event',
-        required: true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'event',
+        required: true,
+        index: true
     },
     isScanned: {
         type: Boolean,
@@ -66,13 +65,12 @@ const inviteSchema = new mongoose.Schema({
     }
 }, 
 {
-    timestamps: true, // Ajoute automatiquement createdAt et updatedAt
+    timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
 });
 
-
-// Version alternative du middleware
+// Empêcher l'enregistrement d'un invité sans email ET sans téléphone
 inviteSchema.pre('validate', function() {
     if (!this.telephone && !this.email) {
         const error = new Error('Veuillez fournir au moins un numéro de téléphone ou une adresse email');
@@ -82,5 +80,31 @@ inviteSchema.pre('validate', function() {
 });
 
 const Invites = mongoose.model('Invites', inviteSchema);
+
+// Fonction auto-exécutée pour nettoyer les anciens index non-sparse conflictuels dans MongoDB
+async function ensureSparseIndexes() {
+    try {
+        const collection = Invites.collection;
+        const indexes = await collection.indexes();
+        for (const idx of indexes) {
+            if ((idx.name === 'telephone_1' || idx.name === 'email_1') && !idx.sparse) {
+                console.log(`🔄 Suppression de l'ancien index non-sparse: ${idx.name}`);
+                await collection.dropIndex(idx.name);
+            }
+        }
+        await Invites.syncIndexes();
+        console.log('✅ Index sparse synchronisés avec succès pour Invites.');
+    } catch (err) {
+        // Ignorer si la collection n'existe pas encore ou si l'index est déjà sparse
+        console.log('ℹ️ Note synchronisation index Invites:', err.message);
+    }
+}
+
+// Lancer la synchronisation dès que la connexion est prête
+if (mongoose.connection.readyState === 1) {
+    ensureSparseIndexes();
+} else {
+    mongoose.connection.once('open', ensureSparseIndexes);
+}
 
 module.exports = Invites;

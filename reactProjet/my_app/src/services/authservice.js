@@ -1,22 +1,15 @@
-
 // authservice.js
-// Service complet pour la gestion de l'authentification utilisateur (connexion, déconnexion, refresh token, gestion du localStorage)
-// Utilise les routes backend définies dans authRoutes.js et la logique de token du contrôleur auth.js
+// Service complet pour la gestion de l'authentification utilisateur
+import api, { API_BASE_URL } from './api';
 
-import axios from 'axios';
-
-// URL de base de l'API (adapter selon votre environnement)
-const API_URL = 'http://localhost:3000/api/auth';
+const AUTH_URL = `${API_BASE_URL}/auth`;
 
 // =============================
 // Connexion utilisateur
 // =============================
-// Envoie les identifiants à /api/auth/login
-// Stocke l'accessToken et l'utilisateur dans le localStorage si succès
 export const loginService = async (credentials) => {
 	try {
-		const response = await axios.post(`${API_URL}/login`, credentials, { withCredentials: true });
-		// Le backend renvoie accessToken et user
+		const response = await api.post('/auth/login', credentials);
 		if (response.data.accessToken) {
 			localStorage.setItem('accessToken', response.data.accessToken);
 			localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -30,13 +23,11 @@ export const loginService = async (credentials) => {
 // =============================
 // Déconnexion utilisateur
 // =============================
-// Appelle /api/auth/logout pour supprimer les cookies côté serveur
-// Nettoie le localStorage côté client
 export const logoutService = async () => {
 	try {
-		await axios.post(`${API_URL}/logout`, {}, { withCredentials: true });
+		await api.post('/auth/logout', {});
 	} catch (error) {
-		// Même en cas d'erreur, on nettoie le localStorage
+		console.warn("Erreur lors de l'appel logout:", error);
 	} finally {
 		localStorage.removeItem('accessToken');
 		localStorage.removeItem('user');
@@ -46,12 +37,14 @@ export const logoutService = async () => {
 // =============================
 // Rafraîchir l'access token
 // =============================
-// Appelle /api/auth/refresh pour obtenir un nouveau accessToken
 export const refreshTokenService = async () => {
 	try {
-		const response = await axios.post(`${API_URL}/refresh`, {}, { withCredentials: true });
+		const response = await api.post('/auth/refresh', {});
 		if (response.data.accessToken) {
 			localStorage.setItem('accessToken', response.data.accessToken);
+			if (response.data.user) {
+				localStorage.setItem('user', JSON.stringify(response.data.user));
+			}
 			return response.data.accessToken;
 		}
 		throw new Error('Impossible de rafraîchir le token');
@@ -70,14 +63,66 @@ export const getCurrentUser = () => {
 	return user ? JSON.parse(user) : null;
 };
 
-// Vérifie si le token est présent et non expiré (simple, à améliorer selon vos besoins)
+// Vérifie si le token est présent et valide
 export const isTokenValid = () => {
 	const token = getAccessToken();
 	if (!token) return false;
-	// Décoder le JWT pour vérifier l'expiration (optionnel, ici on suppose qu'il existe)
-	// Pour une vraie vérification, utiliser jwt-decode côté client
-	return true;
+	try {
+		// Vérification simple du format JWT et de la date d'expiration si disponible
+		const parts = token.split('.');
+		if (parts.length !== 3) return false;
+		const payload = JSON.parse(atob(parts[1]));
+		if (payload.exp && payload.exp * 1000 < Date.now()) {
+			return false;
+		}
+		return true;
+	} catch {
+		return true;
+	}
 };
 
+// =============================
+// Mot de passe oublié & OTP
+// =============================
+export const forgotPasswordService = async (email) => {
+	try {
+		const response = await api.post('/auth/forgot-password', { email });
+		return response.data;
+	} catch (error) {
+		throw error.response?.data || error;
+	}
+};
 
+export const verifyOtpService = async (email, otp) => {
+	try {
+		const response = await api.post('/auth/verify-otp', { email, otp });
+		return response.data;
+	} catch (error) {
+		throw error.response?.data || error;
+	}
+};
 
+export const resetPasswordService = async (resetSessionToken, newPassword) => {
+	try {
+		const response = await api.post('/auth/reset-password', { resetSessionToken, newPassword });
+		return response.data;
+	} catch (error) {
+		throw error.response?.data || error;
+	}
+};
+
+// =============================
+// Connexion Google OAuth
+// =============================
+export const googleLoginService = async (credentialToken) => {
+	try {
+		const response = await api.post('/auth/google', { token: credentialToken });
+		if (response.data.accessToken) {
+			localStorage.setItem('accessToken', response.data.accessToken);
+			localStorage.setItem('user', JSON.stringify(response.data.user));
+		}
+		return response.data;
+	} catch (error) {
+		throw error.response?.data || error;
+	}
+};

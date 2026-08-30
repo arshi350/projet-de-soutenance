@@ -1,18 +1,14 @@
+// adminStatService.js
 // Service pour récupérer les statistiques globales de l'administration
-import axios from 'axios';
-
-const API_URL = 'http://localhost:3000/api';
+import api from './api';
 
 export const getAdminStats = async (token) => {
   try {
-    const response = await axios.get(`${API_URL}/admin/stats`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    const response = await api.get('/admin/stats', config);
     return response.data;
   } catch (error) {
+    console.error("Erreur lors de la récupération des stats admin:", error);
     throw error.response?.data || error;
   }
 };

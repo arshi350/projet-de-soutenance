@@ -1,353 +1,372 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthContext } from '../../../../../context/AuthContext';
 import { useAddInvite } from '../../../../../hooks/useInvite';
-import { XCircle, CheckCircle, UserPlus, Mail, Phone, User } from 'lucide-react';
+import { 
+  X, 
+  User, 
+  Mail, 
+  Phone, 
+  Sparkles, 
+  CheckCircle2, 
+  XCircle, 
+  ShieldCheck, 
+  Crown, 
+  ArrowRight,
+  PlusCircle,
+  Check
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 
 export default function InviteForm({ eventId, closeModal, onSuccess }) {
   const { token } = useAuthContext();
   const { addNewInvite, loading, error, success, reset } = useAddInvite(token);
+
   const [formData, setFormData] = useState({
     nom: '',
     prenom: '',
-    telephone: '',
-    email: '',
+    contact: '',
     status: 'classique'
   });
+
+  const [addAnother, setAddAnother] = useState(false);
+  const [focusedField, setFocusedField] = useState(null);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  // Nettoyage du state du hook lors du démontage
   useEffect(() => {
     return () => {
       reset();
     };
   }, [reset]);
 
-  // Gestion du succès
   useEffect(() => {
     if (success) {
-      // Réinitialisation du formulaire
-      setFormData({ nom: '', prenom: '', telephone: '', email: '', status: 'classique' });
-      setErrors({});
-      setTouched({});
+      toast.success(`${formData.prenom || 'Invité'} a été enregistré avec succès !`);
       
-      // Fermeture automatique après 1.5 secondes
-      const timer = setTimeout(() => {
-        if (onSuccess) {
-          onSuccess();
-        }
-        closeModal();
-      }, 1500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [success, closeModal, onSuccess]);
+      if (onSuccess) {
+        onSuccess();
+      }
 
-  // Validation des champs
+      if (addAnother) {
+        setFormData({ nom: '', prenom: '', contact: '', status: 'classique' });
+        setErrors({});
+        setTouched({});
+        reset();
+      } else {
+        const timer = setTimeout(() => {
+          closeModal();
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [success, addAnother, closeModal, onSuccess, reset, formData.prenom]);
+
   const validateField = (name, value) => {
     switch (name) {
       case 'nom':
         if (!value.trim()) return 'Le nom est requis';
-        if (value.trim().length < 2) return 'Le nom doit contenir au moins 2 caractères';
+        if (value.trim().length < 2) return 'Au moins 2 caractères requis';
         return '';
       case 'prenom':
         if (!value.trim()) return 'Le prénom est requis';
-        if (value.trim().length < 2) return 'Le prénom doit contenir au moins 2 caractères';
+        if (value.trim().length < 2) return 'Au moins 2 caractères requis';
         return '';
-      case 'telephone':
-        if (!value.trim()) return 'Le téléphone est requis';
-        const phoneRegex = /^6[25789]\d{7}$/;
-        if (!phoneRegex.test(value.replace(/\s/g, ''))) {
-          return 'Numéro de téléphone invalide. Exemple : 683660987';
+      case 'contact':
+        if (!value.trim()) return 'Un e-mail ou un mobile est requis';
+        const cleanVal = value.trim();
+        if (cleanVal.includes('@')) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(cleanVal)) return 'Adresse e-mail invalide';
+        } else {
+          const formattedPhone = cleanVal.replace(/[\s\-\+\(\)]/g, '');
+          if (formattedPhone.length < 8) return 'Numéro de mobile incomplet';
         }
         return '';
-      case 'email':
-        if (!value.trim()) return 'L\'email est requis';
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) return 'Email invalide (ex: nom@domaine.com)';
-        return '';
       case 'status':
-        if (!value) return 'Le statut est requis';
+        if (!value) return 'Sélectionnez un rang';
         return '';
       default:
         return '';
     }
   };
 
-  // Validation complète du formulaire
   const validateForm = () => {
     const newErrors = {};
-    const fields = ['nom', 'prenom', 'telephone', 'email', 'status'];
-    
-    fields.forEach(field => {
+    ['nom', 'prenom', 'contact', 'status'].forEach(field => {
       const error = validateField(field, formData[field]);
       if (error) newErrors[field] = error;
     });
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Gestion des changements de champs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Validation en temps réel si le champ a déjà été touché
     if (touched[name]) {
       const error = validateField(name, value);
       setErrors(prev => ({ ...prev, [name]: error }));
     }
   };
 
-  // Gestion du blur des champs
   const handleBlur = (e) => {
     const { name } = e.target;
+    setFocusedField(null);
     setTouched(prev => ({ ...prev, [name]: true }));
     const error = validateField(name, formData[name]);
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
-  // Soumission du formulaire
+  const handleFocus = (name) => {
+    setFocusedField(name);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Marquer tous les champs comme touchés
-    const allTouched = {};
-    Object.keys(formData).forEach(key => {
-      allTouched[key] = true;
-    });
-    setTouched(allTouched);
-    
-    // Validation finale
+    setTouched({ nom: true, prenom: true, contact: true, status: true });
+
     if (!validateForm()) return;
 
-    // Construction du payload et ajout de l'ID de l'événement au backend
+    const contactVal = formData.contact.trim();
+    let email = undefined;
+    let telephone = undefined;
+
+    if (contactVal.includes('@')) {
+      email = contactVal.toLowerCase();
+    } else {
+      let formattedPhone = contactVal.replace(/[\s\-\+\(\)]/g, '');
+      if (formattedPhone.startsWith('237') && formattedPhone.length === 12) {
+        formattedPhone = formattedPhone.substring(3);
+      }
+      telephone = formattedPhone;
+    }
+
     const invitePayload = {
       nom: formData.nom.trim(),
       prenom: formData.prenom.trim(),
-      telephone: formData.telephone.trim(),
-      email: formData.email.trim().toLowerCase(),
+      contact: contactVal,
+      email,
+      telephone,
       status: formData.status,
-      idEvent: eventId,
-      eventId: eventId
+      idEvent: eventId
     };
-
-    if (!eventId) {
-      setErrors((prev) => ({
-        ...prev,
-        api: 'ID de l’événement manquant.',
-      }));
-      return;
-    }
 
     try {
       await addNewInvite(invitePayload);
     } catch (submitError) {
-      console.error('Erreur lors de l\'ajout de l\'invité:', submitError, invitePayload);
+      console.error("Erreur enregistrement:", submitError);
     }
-    closeModal();
   };
 
   return (
-    <div className="relative h-auto max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
-      {/* En-tête */}
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <UserPlus className="w-6 h-6 text-[#017EF7]" />
-            Ajouter un invité
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Remplissez les informations ci-dessous pour enregistrer un nouvel invité
-          </p>
+    <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-gray-200/80 overflow-hidden font-sans text-left">
+      
+      {/* Ruban Supérieur ARSHI EVENT */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-[#FF5005] via-[#EFB810] to-[#0B1727]" />
+
+      {/* En-tête de la Modal */}
+      <div className="px-7 pt-6 pb-4 flex items-center justify-between border-b border-gray-100">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-2xl bg-orange-50 text-[#FF5005] border border-orange-200/60 flex items-center justify-center shadow-xs">
+            <User className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+              Ajouter un Invité
+            </h2>
+            <p className="text-xs text-gray-400">
+              Générez instantanément son pass numérique officiel.
+            </p>
+          </div>
         </div>
+
         <button
           type="button"
           onClick={closeModal}
-          className="rounded-full border border-slate-200 bg-slate-50 p-2 text-slate-500 hover:bg-slate-100 transition-colors"
-          aria-label="Fermer"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
         >
-          ✕
+          <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Message de succès */}
-      {success && (
-        <div className="mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 flex items-center gap-2 animate-in fade-in duration-300">
-          <CheckCircle size={18} className="flex-shrink-0" />
-          <span>Invitant ajouté avec succès ! Redirection en cours...</span>
-        </div>
-      )}
-
-      {/* Message d'erreur */}
       {error && (
-        <div className="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
-          <XCircle size={18} className="flex-shrink-0" />
-          <span>{typeof error === 'string' ? error : error?.message || 'Une erreur est survenue lors de l\'ajout de l\'invité. Veuillez réessayer.'}</span>
+        <div className="mx-7 mt-4 p-3 rounded-2xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700 flex items-center gap-2">
+          <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+          <span>{typeof error === 'string' ? error : error?.message || 'Erreur lors de l\'enregistrement.'}</span>
         </div>
       )}
 
       {/* Formulaire */}
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Nom et Prénom */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <form onSubmit={handleSubmit} className="px-7 py-6 space-y-4">
+        
+        {/* Nom & Prénom */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Nom *
-            </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                name="nom"
-                value={formData.nom}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="Dupont"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-3 text-sm text-slate-900 outline-none focus:border-[#017EF7] focus:ring-2 focus:ring-[#017EF7]/20 transition-all"
-                disabled={loading}
-              />
-            </div>
-            {touched.nom && errors.nom && (
-              <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                <XCircle size={12} />
-                {errors.nom}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-1">
               Prénom *
             </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                name="prenom"
-                value={formData.prenom}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="Jean"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-3 text-sm text-slate-900 outline-none focus:border-[#017EF7] focus:ring-2 focus:ring-[#017EF7]/20 transition-all"
-                disabled={loading}
-              />
-            </div>
-            {touched.prenom && errors.prenom && (
-              <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                <XCircle size={12} />
-                {errors.prenom}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Téléphone et Email */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Téléphone *
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                name="telephone"
-                value={formData.telephone}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="0612345678"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-3 text-sm text-slate-900 outline-none focus:border-[#017EF7] focus:ring-2 focus:ring-[#017EF7]/20 transition-all"
-                disabled={loading}
-              />
-            </div>
-            {touched.telephone && errors.telephone && (
-              <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                <XCircle size={12} />
-                {errors.telephone}
-              </p>
+            <input
+              type="text"
+              name="prenom"
+              value={formData.prenom}
+              onChange={handleChange}
+              onFocus={() => handleFocus('prenom')}
+              onBlur={handleBlur}
+              placeholder="Ex: Alexandre"
+              className={`w-full px-4 py-2.5 bg-gray-50 border rounded-xl text-xs font-bold text-gray-900 focus:outline-none transition-all ${
+                errors.prenom && touched.prenom
+                  ? 'border-red-400 bg-red-50/30'
+                  : focusedField === 'prenom'
+                  ? 'border-[#FF5005] bg-white ring-2 ring-[#FF5005]/15'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+              disabled={loading}
+            />
+            {errors.prenom && touched.prenom && (
+              <p className="text-[10px] text-red-500 font-bold mt-1">{errors.prenom}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Email *
+            <label className="block text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-1">
+              Nom *
             </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="jean.dupont@email.com"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 py-3 text-sm text-slate-900 outline-none focus:border-[#017EF7] focus:ring-2 focus:ring-[#017EF7]/20 transition-all"
-                disabled={loading}
-              />
-            </div>
-            {touched.email && errors.email && (
-              <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                <XCircle size={12} />
-                {errors.email}
-              </p>
+            <input
+              type="text"
+              name="nom"
+              value={formData.nom}
+              onChange={handleChange}
+              onFocus={() => handleFocus('nom')}
+              onBlur={handleBlur}
+              placeholder="Ex: Dumas"
+              className={`w-full px-4 py-2.5 bg-gray-50 border rounded-xl text-xs font-bold text-gray-900 focus:outline-none transition-all ${
+                errors.nom && touched.nom
+                  ? 'border-red-400 bg-red-50/30'
+                  : focusedField === 'nom'
+                  ? 'border-[#FF5005] bg-white ring-2 ring-[#FF5005]/15'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+              disabled={loading}
+            />
+            {errors.nom && touched.nom && (
+              <p className="text-[10px] text-red-500 font-bold mt-1">{errors.nom}</p>
             )}
           </div>
         </div>
 
-        {/* Statut */}
+        {/* Contact unique (Email ou Mobile) */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Statut *
+          <label className="block text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-1">
+            Canal de contact (Email ou Mobile WhatsApp) *
           </label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-[#017EF7] focus:ring-2 focus:ring-[#017EF7]/20 transition-all"
-            disabled={loading}
-          >
-            <option value="classic">Classic</option>
-            <option value="vip">VIP</option>
-          </select>
-          {touched.status && errors.status && (
-            <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-              <XCircle size={12} />
-              {errors.status}
-            </p>
+          <div className="relative">
+            <input
+              type="text"
+              name="contact"
+              value={formData.contact}
+              onChange={handleChange}
+              onFocus={() => handleFocus('contact')}
+              onBlur={handleBlur}
+              placeholder="Ex: alexandre@domaine.com ou +33 6 12 34 56 78"
+              className={`w-full px-4 py-2.5 bg-gray-50 border rounded-xl text-xs font-bold text-gray-900 focus:outline-none transition-all ${
+                errors.contact && touched.contact
+                  ? 'border-red-400 bg-red-50/30'
+                  : focusedField === 'contact'
+                  ? 'border-[#FF5005] bg-white ring-2 ring-[#FF5005]/15'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+              disabled={loading}
+            />
+          </div>
+          {errors.contact && touched.contact && (
+            <p className="text-[10px] text-red-500 font-bold mt-1">{errors.contact}</p>
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end pt-4 border-t border-slate-200">
-          <button
-            type="button"
-            onClick={closeModal}
-            className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50 hover:border-slate-300"
-            disabled={loading}
-          >
-            Annuler
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-2xl bg-[#017EF7] px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-blue-600 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Envoi en cours...
-              </>
-            ) : (
-              'Enregistrer l\'invité'
-            )}
-          </button>
+        {/* Sélection du Rang (Classique vs VIP) */}
+        <div>
+          <label className="block text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-2">
+            Catégorie du Pass d'Accès
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, status: 'classique' }))}
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                formData.status === 'classique'
+                  ? 'border-[#FF5005] bg-orange-50/40 text-gray-900 shadow-xs ring-1 ring-[#FF5005]'
+                  : 'border-gray-200 hover:border-gray-300 bg-gray-50 text-gray-600'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-extrabold">Invité Classique</span>
+                <User size={14} className={formData.status === 'classique' ? 'text-[#FF5005]' : 'text-gray-400'} />
+              </div>
+              <p className="text-[10px] text-gray-400 leading-tight">Accès standard à l'événement</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, status: 'vip' }))}
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                formData.status === 'vip'
+                  ? 'border-[#EFB810] bg-amber-50/40 text-gray-900 shadow-xs ring-1 ring-[#EFB810]'
+                  : 'border-gray-200 hover:border-gray-300 bg-gray-50 text-gray-600'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-extrabold text-[#EFB810]">Privilège VIP</span>
+                <Crown size={14} className="text-[#EFB810]" />
+              </div>
+              <p className="text-[10px] text-gray-400 leading-tight">Accès coupe-file & salon d'honneur</p>
+            </button>
+          </div>
         </div>
 
-        {/* Note des champs obligatoires */}
-        <p className="text-xs text-slate-400 text-center">
-          * Champs obligatoires
-        </p>
+        {/* Option Ajouter un autre invité */}
+        <div className="pt-2 flex items-center justify-between border-t border-gray-100">
+          <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={addAnother}
+              onChange={(e) => setAddAnother(e.target.checked)}
+              className="w-4 h-4 rounded text-[#FF5005] accent-[#FF5005] cursor-pointer"
+            />
+            <span>Ajouter un autre invité après</span>
+          </label>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-800 transition cursor-pointer"
+            >
+              Annuler
+            </button>
+
+            <motion.button
+              type="submit"
+              disabled={loading}
+              whileHover={!loading ? { scale: 1.03 } : {}}
+              whileTap={!loading ? { scale: 0.97 } : {}}
+              className="px-6 py-2.5 bg-[#FF5005] hover:bg-[#ff6220] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md shadow-orange-500/25 flex items-center gap-2 transition disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? (
+                <span>Génération du pass...</span>
+              ) : (
+                <>
+                  <span>Enregistrer l'invité</span>
+                  <ArrowRight size={14} />
+                </>
+              )}
+            </motion.button>
+          </div>
+        </div>
+
       </form>
+
     </div>
   );
 }

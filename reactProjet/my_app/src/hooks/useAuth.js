@@ -95,6 +95,12 @@ export const useUpdateUser = () => {
 	return updateUser;
 };
 
+// Hook pour la connexion Google
+export const useGoogleLogin = () => {
+	const { googleLogin } = useAuthContext();
+	return googleLogin;
+};
+
 // Hook pour rafraîchir le token
 export const useRefreshToken = () => {
 	const { refreshToken } = useAuthContext();

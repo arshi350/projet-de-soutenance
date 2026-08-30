@@ -1,55 +1,50 @@
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Globe, Sparkles, Navigation } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const LocationBanner = () => {
   return (
-    <div className="mx-8 mb-8 font overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm flex flex-col md:flex-row items-stretch min-h-[300px]">
+    <div className="mt-8 overflow-hidden rounded-3xl bg-white border border-gray-200/80 shadow-sm flex flex-col md:flex-row items-stretch font-sans text-left">
       
       {/* Partie Gauche : Texte */}
-      <div className="flex-1 p-10 flex flex-col justify-center">
-        <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">
-          Gérez vos événements partout.
+      <div className="flex-1 p-8 sm:p-10 flex flex-col justify-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FF5005] text-[10px] font-extrabold uppercase tracking-widest w-max mb-3">
+          <Globe size={12} />
+          Cartographie & Logistique
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-3 tracking-tight">
+          Supervisez vos réceptions partout.
         </h2>
-        <p className="text-slate-500 leading-relaxed max-w-md mb-8 font-medium">
-          Visualisez la répartition géographique de vos invités et optimisez la 
-          logistique de vos lieux de réception grâce à notre intégration 
-          cartographique intelligente.
+        <p className="text-gray-500 text-xs sm:text-sm leading-relaxed max-w-md mb-6 font-medium">
+          Visualisez la répartition géographique de vos invités et optimisez la logistique de vos points de contrôle d'accès en temps réel.
         </p>
 
         {/* Badge Prochain événement */}
-        <div className="flex items-center gap-3">
-          <div className="bg-emerald-50 p-2.5 rounded-full">
-            <MapPin className="text-emerald-500" size={20} />
+        <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 p-3 rounded-2xl w-max">
+          <div className="bg-emerald-500/10 text-emerald-600 p-2 rounded-xl border border-emerald-200">
+            <MapPin size={18} />
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-900">
-              Prochain événement : Paris
+            <p className="text-xs font-extrabold text-gray-900">
+              Prochain Événement Actif
             </p>
-            <p className="text-xs text-slate-400 font-medium">
-              Pavillon Vendôme - 12 Nov
+            <p className="text-[10px] text-gray-500 font-semibold">
+              Palais des Congrès • Paris
             </p>
           </div>
         </div>
       </div>
 
-      {/* Partie Droite : Illustration et Dégradé */}
-      <div className="flex-1 relative overflow-hidden bg-gradient-to-r from-white via-cyan-50 to-cyan-100 flex items-center justify-center py-10">
+      {/* Partie Droite : Visual Grid */}
+      <div className="flex-1 relative bg-[#0B1727] flex items-center justify-center p-8 overflow-hidden border-t md:border-t-0 md:border-l border-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_50%,rgba(255,80,5,0.2),transparent)] pointer-events-none"></div>
         
-        {/* Cercles décoratifs en arrière-plan (optionnel pour le style) */}
-        <div className="absolute top-10 right-10 w-32 h-32 bg-white/40 rounded-full blur-2xl" />
-        <div className="absolute bottom-10 left-20 w-24 h-24 bg-cyan-200/30 rounded-full blur-xl" />
-
-        {/* Illustration Map Pin (simplifiée en CSS/SVG) */}
-        <div className="relative z-10 flex flex-col items-center">
-          {/* Forme du Pin géant */}
-          <div className="relative w-48 h-64 bg-red-400 rounded-t-full rounded-bl-full rotate-45 flex items-center justify-center shadow-2xl border-4 border-white/20">
-            {/* Le trou au milieu du pin */}
-            <div className="w-20 h-20 bg-white rounded-full -rotate-45 shadow-inner" />
+        <div className="relative z-10 text-center space-y-3">
+          <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center mx-auto text-[#FF5005] shadow-xl">
+            <Navigation size={28} />
           </div>
-          
-          {/* Nuages stylisés (simulés avec des div blanches) */}
-          <div className="absolute -right-12 top-1/4 w-32 h-10 bg-white/80 rounded-full blur-sm" />
-          <div className="absolute -left-16 bottom-1/3 w-40 h-12 bg-white/60 rounded-full blur-md" />
+          <h4 className="text-white font-extrabold text-sm">Contrôle d'Accès Géolocalisé</h4>
+          <p className="text-gray-400 text-xs max-w-xs">Synchronisation automatique avec l'application mobile de scan.</p>
         </div>
       </div>
 

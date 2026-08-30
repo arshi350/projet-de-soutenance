@@ -1,4 +1,5 @@
 // lib/pages/scan_page.dart
+import 'package:arshievent_scan/models/guest_model.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../models/event_model.dart';
@@ -77,18 +78,13 @@ class _ScanPageState extends State<ScanPage> {
       final result = await ScanService.verifyQRCode(qrCode, widget.event.id);
 
       if (result.success && !result.alreadyScanned && result.guest != null) {
-        // Scan réussi
+        // Scan réussi (Privé ou Public)
         setState(() {
           _lastScanResult = 'valid';
           _lastScanName = result.guest!.fullName;
           _lastScanTime = _getFormattedTime();
         });
 
-        if (_isSoundOn) {
-          // Déclencher un retour haptique ou sonore
-        }
-
-        // Naviguer vers la page de succès
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -98,19 +94,34 @@ class _ScanPageState extends State<ScanPage> {
             ),
           ),
         );
-      } else if (result.alreadyScanned && result.guest != null) {
-        // QR déjà scanné
+      } else if (result.alreadyScanned) {
+        // QR déjà scanné (HTTP 409 Conflict)
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => ScanWarningPage(
               event: widget.event,
-              guest: result.guest!,
+              guest: result.guest ??
+                  GuestModel(
+                    id: '',
+                    nom: 'Billet Déjà Scanné'
+                    prenom: '',
+                    email: '',
+                    telephone: '',
+                    status: 'Invalide',
+                    isScanned: true,
+                    isPresent: true,
+                    idEvent: widget.event.id,
+                    firstName: '',
+                    lastName: '',
+                  ),
+              scannedAt: result.scannedAt,
+              errorMessage: result.error,
             ),
           ),
         );
       } else {
-        // QR invalide
+        // QR invalide ou révoqué
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

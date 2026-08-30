@@ -10,10 +10,10 @@ import 'pages/events_list_page.dart';
 import 'pages/login_page.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const MyApp()); 
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatelessWidget {   
   const MyApp({super.key});
 
   @override
@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GuestProvider()),
         ChangeNotifierProvider(create: (_) => ScanProvider()),
       ],
-      child: MaterialApp(
+      child: MaterialApp(  
         title: 'ARSHIEVENT Scan',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
 }
 
 /// Wrapper widget that initializes auth state before showing the app
-class _AppWrapper extends StatefulWidget {
+class _AppWrapper extends StatefulWidget { 
   const _AppWrapper();
 
   @override

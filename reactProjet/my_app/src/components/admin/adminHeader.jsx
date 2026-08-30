@@ -3,14 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Bell, Settings } from 'lucide-react'; 
 import { useLocation, useNavigate } from 'react-router-dom';
 
-// Liste mise à jour selon l'image (Panel Admin)
+// Liste mise à jour selon l'image (Panel Admin) - Sans templates
 const navItemsList = [
   { id:'', name: 'Accueil', key: 'home' },
   { id:'', name: "Vue d'ensemble", key: 'vue' },
   { id:'', name: 'utilisateurs', key: 'utilisateurs' },
   { id:'', name: 'evenement', key: 'evenement' },
   { id:'', name: 'analytique', key: 'analytique' },
-  { id:'', name: 'Templates', key: 'templates' },
   { id:'', name: "Abonnements", key: 'abonements' },
   { id:'', name: 'Paramètres', key: 'parametres' },
 ];
@@ -47,7 +46,7 @@ const AdminHeader = ({ onSectionChange, onAvatarClick }) => {
     }
   };
 
-  // Variants d'animation 672694138
+  // Variants d'animation
   const navItemVariants = {
     initial: { opacity: 0, y: -10 },
     animate: { opacity: 1, y: 0 },
@@ -98,7 +97,7 @@ const AdminHeader = ({ onSectionChange, onAvatarClick }) => {
         </span>
       </motion.div>
 
-      {/* Navigation Admin (Ajustement des gaps pour éviter les retours à la ligne) */}
+      {/* Navigation Admin */}
       <nav className="flex items-center gap-5 ml-8 flex-wrap">
         {navItemsList.map((item, index) => (
           <motion.div
@@ -121,13 +120,11 @@ const AdminHeader = ({ onSectionChange, onAvatarClick }) => {
             >
               {item.name}
             </span>
-            
-            {/* Indicateur actif bleu sous l'élément comme sur la maquette */}
           </motion.div>
         ))}
       </nav>
 
-      {/* Barre de recherche (Placeholder modifié pour l'Admin) */}
+      {/* Barre de recherche */}
       <motion.div
         className="flex-1 max-w-sm mx-6"
         animate={isSearchFocused ? "focused" : "blurred"}

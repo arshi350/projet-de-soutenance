@@ -1,17 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useCurrentUser } from '../../../hooks/useAuth';
 import { useAddEvent } from '../../../hooks/useEvent';
 import { 
   Type, FileText, Calendar, MapPin, Shapes, 
   Image as ImageIcon, Upload, LayoutList, AlertCircle,
-  CheckCircle, XCircle } from 'lucide-react';
+  CheckCircle, XCircle, Lock, Globe, Mail, MessageSquare, 
+  Sparkles, CreditCard, ShieldCheck, Zap, ArrowRight
+} from 'lucide-react';
+
+const PRICING_CONSTANTS = {
+  PRIVATE: {
+    BASE_DAILY: 2500,
+    EMAIL_COST: 15,
+    WHATSAPP_COST: 30,
+    BOTH_COST: 45
+  },
+  PUBLIC: {
+    BASE_DAILY: 5000,
+    CAPACITY_COST: 10
+  }
+};
 
 const EventForm = ({ closeModal }) => {
   const { user } = useCurrentUser();
   const userId = user?.id;
-  const { addNewEvent, loading, error, success, data, reset } = useAddEvent();
+  const { addNewEvent, loading, error, success, reset } = useAddEvent();
   
   const initialFormdata = {
+    eventType: 'private', // 'private' | 'public'
     titre: "", 
     description: '', 
     DateDebut: '', 
@@ -20,6 +36,9 @@ const EventForm = ({ closeModal }) => {
     heureFin: '', 
     lieu: '', 
     categorie: '',
+    maxCapacity: 50,
+    channel: 'email', // 'email' | 'whatsapp' | 'both'
+    publicFeeBearer: 'buyer', // 'buyer' | 'organizer'
     coverImage: null
   };
   
@@ -28,29 +47,71 @@ const EventForm = ({ closeModal }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [touched, setTouched] = useState({});
 
-  // Reset hook state when component unmounts
   useEffect(() => {
     return () => {
       reset();
     };
   }, [reset]);
 
-  // Handle successful event creation
   useEffect(() => {
     if (success) {
-      // Reset form
       setFormData(initialFormdata);
       setImagePreview(null);
       setTouched({});
-      
-      // Close modal after delay
       const timer = setTimeout(() => {
         closeModal();
       }, 2000);
-      
       return () => clearTimeout(timer);
     }
-  }, [success, closeModal, initialFormdata]);
+  }, [success, closeModal]);
+
+  // Calcul dynamique de la tarification en temps réel (formule new.md)
+  const pricingQuote = useMemo(() => {
+    let days = 1;
+    if (formData.DateDebut && formData.DateFin) {
+      const start = new Date(formData.DateDebut);
+      const end = new Date(formData.DateFin);
+      const diff = Math.max(0, end.getTime() - start.getTime());
+      days = Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)) || 1);
+    }
+
+    if (formData.eventType === 'public') {
+      const baseFee = days * PRICING_CONSTANTS.PUBLIC.BASE_DAILY;
+      const capacity = Math.max(10, parseInt(formData.maxCapacity, 10) || 10);
+      const capacityFee = capacity * PRICING_CONSTANTS.PUBLIC.CAPACITY_COST;
+      const total = baseFee + capacityFee;
+      return {
+        days,
+        baseDaily: PRICING_CONSTANTS.PUBLIC.BASE_DAILY,
+        baseFee,
+        channelLabel: `Jauge de ${capacity} places`,
+        channelCost: capacityFee,
+        total: Number(total.toFixed(2))
+      };
+    } else {
+      const baseFee = days * PRICING_CONSTANTS.PRIVATE.BASE_DAILY;
+      const guests = Math.max(1, parseInt(formData.maxCapacity, 10) || 1);
+      let unitCost = PRICING_CONSTANTS.PRIVATE.EMAIL_COST;
+      let channelLabel = 'Invitations E-mail';
+      if (formData.channel === 'whatsapp') {
+        unitCost = PRICING_CONSTANTS.PRIVATE.WHATSAPP_COST;
+        channelLabel = 'Invitations WhatsApp';
+      } else if (formData.channel === 'both') {
+        unitCost = PRICING_CONSTANTS.PRIVATE.BOTH_COST;
+        channelLabel = 'Email + WhatsApp';
+      }
+      const channelCost = guests * unitCost;
+      const total = baseFee + channelCost;
+      return {
+        days,
+        baseDaily: PRICING_CONSTANTS.PRIVATE.BASE_DAILY,
+        baseFee,
+        channelLabel: `${channelLabel} (${guests} invités)`,
+        channelCost,
+        total: Number(total.toFixed(2))
+      };
+    }
+  }, [formData.eventType, formData.DateDebut, formData.DateFin, formData.maxCapacity, formData.channel]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -58,7 +119,6 @@ const EventForm = ({ closeModal }) => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -68,17 +128,10 @@ const EventForm = ({ closeModal }) => {
   };
 
   const handleBlur = (fieldName) => {
-    setTouched(prev => ({
-      ...prev,
-      [fieldName]: true
-    }));
-    
+    setTouched(prev => ({ ...prev, [fieldName]: true }));
     const fieldError = validateField(fieldName, formData[fieldName]);
     if (fieldError) {
-      setErrors(prev => ({
-        ...prev,
-        [fieldName]: fieldError
-      }));
+      setErrors(prev => ({ ...prev, [fieldName]: fieldError }));
     }
   };
 
@@ -86,40 +139,33 @@ const EventForm = ({ closeModal }) => {
     switch (name) {
       case 'titre':
         if (!value?.trim()) return 'Le titre est requis';
-        if (value.length < 3) return 'Le titre doit contenir au moins 3 caractères';
-        if (value.length > 100) return 'Le titre ne doit pas dépasser 100 caractères';
+        if (value.length < 3) return 'Au moins 3 caractères requis';
         return '';
-      
       case 'description':
         if (!value?.trim()) return 'La description est requise';
-        if (value.length < 10) return 'La description doit contenir au moins 10 caractères';
-        if (value.length > 500) return 'La description ne doit pas dépasser 500 caractères';
+        if (value.length < 10) return 'Au moins 10 caractères requis';
         return '';
-      
       case 'DateDebut':
         if (!value) return 'La date de début est requise';
         return '';
-      
       case 'heureDebut':
         if (!value) return 'L\'heure de début est requise';
         return '';
-      
       case 'DateFin':
         if (!value) return 'La date de fin est requise';
         return '';
-      
       case 'heureFin':
         if (!value) return 'L\'heure de fin est requise';
         return '';
-      
       case 'lieu':
         if (!value?.trim()) return 'Le lieu est requis';
         return '';
-      
       case 'categorie':
         if (!value?.trim()) return 'La catégorie est requise';
         return '';
-      
+      case 'maxCapacity':
+        if (!value || parseInt(value, 10) < 1) return 'La jauge doit être supérieure à 0';
+        return '';
       default:
         return '';
     }
@@ -128,48 +174,25 @@ const EventForm = ({ closeModal }) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validation
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      const maxSize = 10 * 1024 * 1024; // 10MB
-
       if (!allowedTypes.includes(file.type)) {
-        setErrors(prev => ({
-          ...prev,
-          coverImage: 'Format non supporté. Utilisez PNG, JPG ou WEBP'
-        }));
+        setErrors(prev => ({ ...prev, coverImage: 'Format PNG, JPG ou WEBP requis' }));
         return;
       }
-
-      if (file.size > maxSize) {
-        setErrors(prev => ({
-          ...prev,
-          coverImage: 'Le fichier ne doit pas dépasser 10MB'
-        }));
+      if (file.size > 10 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, coverImage: 'Max 10MB' }));
         return;
       }
-
-      setFormData(prev => ({
-        ...prev,
-        coverImage: file
-      }));
-      
-      // Create preview
+      setFormData(prev => ({ ...prev, coverImage: file }));
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
+      reader.onloadend = () => setImagePreview(reader.result);
       reader.readAsDataURL(file);
-      
-      // Clear error
-      setErrors(prev => ({
-        ...prev,
-        coverImage: ''
-      }));
     }
   };
 
   const buildFormData = () => {
     const payload = new FormData();
+    payload.append('eventType', formData.eventType);
     payload.append('titre', formData.titre);
     payload.append('description', formData.description);
     payload.append('DateDebut', formData.DateDebut);
@@ -178,6 +201,9 @@ const EventForm = ({ closeModal }) => {
     payload.append('heureFin', formData.heureFin);
     payload.append('lieu', formData.lieu);
     payload.append('categorie', formData.categorie);
+    payload.append('maxCapacity', formData.maxCapacity);
+    payload.append('channel', formData.channel);
+    payload.append('publicFeeBearer', formData.publicFeeBearer);
     if (userId) payload.append('userId', userId);
     if (formData.coverImage) {
       payload.append('image', formData.coverImage);
@@ -187,399 +213,432 @@ const EventForm = ({ closeModal }) => {
 
   const validateForm = () => {
     const newErrors = {};
-
-    // Validate all fields
-    Object.keys(formData).forEach(key => {
-      if (key !== 'coverImage') {
-        const fieldError = validateField(key, formData[key]);
-        if (fieldError) {
-          newErrors[key] = fieldError;
-        }
-      }
+    ['titre', 'description', 'DateDebut', 'DateFin', 'heureDebut', 'heureFin', 'lieu', 'categorie', 'maxCapacity'].forEach(key => {
+      const err = validateField(key, formData[key]);
+      if (err) newErrors[key] = err;
     });
 
-    // Validate date range
     if (formData.DateDebut && formData.DateFin) {
-      const start = new Date(`${formData.DateDebut} ${formData.heureDebut || '00:00'}`);
-      const end = new Date(`${formData.DateFin} ${formData.heureFin || '00:00'}`);
-      
+      const start = new Date(`${formData.DateDebut}T${formData.heureDebut || '00:00'}`);
+      const end = new Date(`${formData.DateFin}T${formData.heureFin || '00:00'}`);
       if (end <= start) {
-        newErrors.DateFin = 'La date de fin doit être postérieure à la date de début';
+        newErrors.DateFin = 'La fin doit être postérieure au début';
       }
     }
-
-    // Validate image size if present
-    if (formData.coverImage && formData.coverImage.size > 10 * 1024 * 1024) {
-      newErrors.coverImage = 'L\'image ne doit pas dépasser 10MB';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Set all fields as touched on submit
-    const allFields = Object.keys(formData);
-    const touchedFields = {};
-    allFields.forEach(field => {
-      touchedFields[field] = true;
-    });
-    setTouched(touchedFields);
-    
-    if (!validateForm()) {
-      // Scroll to first error
-      const firstError = document.querySelector('.error-message');
-      if (firstError) {
-        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       const formDataToSend = buildFormData();
-      
       const token = localStorage.getItem('accessToken');
-      if (!token) {
-        setErrors(prev => ({
-          ...prev,
-          api: 'Jeton d\'authentification introuvable',
-        }));
-        return;
-      }
-      
-      // Call the addNewEvent from the hook
       await addNewEvent(formDataToSend, token);
-
-      await closeModal(closeModal);
-      
-      // Success is handled by the useEffect
-      
     } catch (err) {
       console.error('Erreur lors de la création:', err);
-      // Error is already managed by the hook
     }
   };
 
   return (
-    <div className="h-215 mt-15 overflow-hidden rounded-xl overflow-y-scroll bg-slate-50 p-4 md:p-8 flex justify-center items-start font">
-      <div className="w-full max-w-2xl bg-white rounded-[2rem] shadow-sm p-8 border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-900 mb-6 uppercase">
-          Créer vos événements en toute simplicité
-        </h1>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         
-        {/* Success Message */}
-        {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2 text-green-700">
-            <CheckCircle size={20} />
-            <span className="font-medium">Événement créé avec succès !</span>
+        {/* Header Modal */}
+        <div className="px-8 py-5 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+          <div>
+            <span className="text-xs font-bold text-indigo-400 tracking-wider uppercase flex items-center gap-1.5 mb-1">
+              <Sparkles className="w-3.5 h-3.5" /> Création d'événement v2.0
+            </span>
+            <h2 className="text-xl font-bold text-white">Créer un nouvel événement</h2>
           </div>
-        )}
-        
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-700">
-            <XCircle size={20} />
-            <span className="font-medium">{error}</span>
-          </div>
-        )}
-        {errors.api && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-700">
-            <AlertCircle size={20} />
-            <span className="font-medium">{errors.api}</span>
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="space-y-10">
-          {/* Section: INFORMATIONS GÉNÉRALES */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 text-[#017EF7]">
-              <LayoutList size={20} strokeWidth={2.5} />
-              <h2 className="text-sm font-semibold tracking-wider uppercase">Informations Générales</h2>
-            </div>
+          <button 
+            type="button" 
+            onClick={closeModal}
+            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+          >
+            <XCircle className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content Body Grid */}
+        <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Main Form (Col 7/12) */}
+          <form onSubmit={handleSubmit} className="lg:col-span-7 space-y-6">
             
-            <div className="space-y-3">
+            {/* Step 0: Event Type Selector */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5">
+                Type d'événement
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, eventType: 'private', maxCapacity: 50 }))}
+                  className={`p-4 rounded-xl border text-left transition flex flex-col gap-2 ${
+                    formData.eventType === 'private'
+                      ? 'border-indigo-500 bg-indigo-500/10 text-white shadow-lg shadow-indigo-500/10'
+                      : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <Lock className={`w-5 h-5 ${formData.eventType === 'private' ? 'text-indigo-400' : 'text-slate-500'}`} />
+                    {formData.eventType === 'private' && <span className="text-[10px] bg-indigo-500 text-white font-bold px-2 py-0.5 rounded-full">Actif</span>}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-white">Événement Privé</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">Mariages, anniversaires, listes d'invités clos & RSVP.</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, eventType: 'public', maxCapacity: 500 }))}
+                  className={`p-4 rounded-xl border text-left transition flex flex-col gap-2 ${
+                    formData.eventType === 'public'
+                      ? 'border-indigo-500 bg-indigo-500/10 text-white shadow-lg shadow-indigo-500/10'
+                      : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <Globe className={`w-5 h-5 ${formData.eventType === 'public' ? 'text-indigo-400' : 'text-slate-500'}`} />
+                    {formData.eventType === 'public' && <span className="text-[10px] bg-indigo-500 text-white font-bold px-2 py-0.5 rounded-full">Actif</span>}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-white">Événement Public</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">Concerts, salons, billetterie en ligne & Designer IA.</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* General Info */}
+            <div className="space-y-4">
               <div>
-                <div className="relative group">
-                  <Type className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#017EF7] transition-colors" size={20} />
-                  <input 
-                    type="text" 
-                    name="titre"
-                    value={formData.titre}
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Titre de l'événement *
+                </label>
+                <input
+                  type="text"
+                  name="titre"
+                  value={formData.titre}
+                  onChange={handleInputChange}
+                  onBlur={() => handleBlur('titre')}
+                  placeholder="Ex: Soirée Gala Annuelle 2026"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+                {errors.titre && <p className="text-red-400 text-xs mt-1">{errors.titre}</p>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Description *
+                </label>
+                <textarea
+                  name="description"
+                  rows="3"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  onBlur={() => handleBlur('description')}
+                  placeholder="Détails du programme, consignes d'accès..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+                {errors.description && <p className="text-red-400 text-xs mt-1">{errors.description}</p>}
+              </div>
+
+              {/* Dates & Times */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Date Début *</label>
+                  <input
+                    type="date"
+                    name="DateDebut"
+                    value={formData.DateDebut}
                     onChange={handleInputChange}
-                    onBlur={() => handleBlur('titre')}
-                    placeholder="Titre de l'événement"
-                    disabled={loading || success}
-                    className={`w-full bg-[#E9F5F8] border-none rounded-xl py-4 pl-12 pr-4 text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-[#017EF7]/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                      errors.titre && touched.titre ? 'ring-2 ring-red-500' : ''
-                    }`}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
                   />
                 </div>
-                {errors.titre && touched.titre && (
-                  <div className="flex items-center gap-1 mt-1 text-red-500 text-xs error-message">
-                    <AlertCircle size={12} />
-                    <span>{errors.titre}</span>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div className="relative group">
-                  <FileText className="absolute left-4 top-6 text-slate-400 group-focus-within:text-[#017EF7] transition-colors" size={20} />
-                  <textarea 
-                    name="description"
-                    value={formData.description}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Heure Début *</label>
+                  <input
+                    type="time"
+                    name="heureDebut"
+                    value={formData.heureDebut}
                     onChange={handleInputChange}
-                    onBlur={() => handleBlur('description')}
-                    placeholder="Décrivez votre événement en quelques mots..."
-                    rows="4"
-                    disabled={loading || success}
-                    className={`w-full bg-[#E9F5F8] border-none rounded-xl py-5 pl-12 pr-4 text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-[#017EF7]/20 outline-none transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                      errors.description && touched.description ? 'ring-2 ring-red-500' : ''
-                    }`}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
                   />
                 </div>
-                {errors.description && touched.description && (
-                  <div className="flex items-center gap-1 mt-1 text-red-500 text-xs error-message">
-                    <AlertCircle size={12} />
-                    <span>{errors.description}</span>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Date Fin *</label>
+                  <input
+                    type="date"
+                    name="DateFin"
+                    value={formData.DateFin}
+                    onChange={handleInputChange}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Heure Fin *</label>
+                  <input
+                    type="time"
+                    name="heureFin"
+                    value={formData.heureFin}
+                    onChange={handleInputChange}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                  />
+                </div>
               </div>
-            </div>
-          </section>
 
-          {/* Section: CALENDRIER */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 text-[#017EF7]">
-              <Calendar size={20} strokeWidth={2.5} />
-              <h2 className="text-sm font-semibold tracking-wider uppercase">Calendrier</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Date de début</label>
-                <input 
-                  type="date" 
-                  name="DateDebut"
-                  value={formData.DateDebut}
-                  onChange={handleInputChange}
-                  onBlur={() => handleBlur('DateDebut')}
-                  disabled={loading || success}
-                  className={`w-full bg-[#E9F5F8] border-none transition duration-200 focus:ring-2 focus:ring-[#017EF7]/20 rounded-xl py-4 px-4 text-slate-700 outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                    errors.DateDebut && touched.DateDebut ? 'ring-2 ring-red-500' : ''
-                  }`} 
-                />
-                {errors.DateDebut && touched.DateDebut && (
-                  <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-                    <AlertCircle size={12} />
-                    <span>{errors.DateDebut}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Heure de début</label>
-                <input 
-                  type="time" 
-                  name="heureDebut"
-                  value={formData.heureDebut}
-                  onChange={handleInputChange}
-                  onBlur={() => handleBlur('heureDebut')}
-                  disabled={loading || success}
-                  className={`w-full bg-[#E9F5F8] border-none transition duration-200 focus:ring-2 focus:ring-[#017EF7]/20 rounded-xl py-4 px-4 text-slate-700 outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                    errors.heureDebut && touched.heureDebut ? 'ring-2 ring-red-500' : ''
-                  }`} 
-                />
-                {errors.heureDebut && touched.heureDebut && (
-                  <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-                    <AlertCircle size={12} />
-                    <span>{errors.heureDebut}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Date de fin</label>
-                <input 
-                  type="date" 
-                  name="DateFin"
-                  value={formData.DateFin}
-                  onChange={handleInputChange}
-                  onBlur={() => handleBlur('DateFin')}
-                  disabled={loading || success}
-                  className={`w-full bg-[#E9F5F8] border-none transition duration-200 focus:ring-2 focus:ring-[#017EF7]/20 rounded-xl py-4 px-4 text-slate-700 outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                    errors.DateFin && touched.DateFin ? 'ring-2 ring-red-500' : ''
-                  }`} 
-                />
-                {errors.DateFin && touched.DateFin && (
-                  <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-                    <AlertCircle size={12} />
-                    <span>{errors.DateFin}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Heure de fin</label>
-                <input 
-                  type="time" 
-                  name="heureFin"
-                  value={formData.heureFin}
-                  onChange={handleInputChange}
-                  onBlur={() => handleBlur('heureFin')}
-                  disabled={loading || success}
-                  className={`w-full bg-[#E9F5F8] border-none transition duration-200 focus:ring-2 focus:ring-[#017EF7]/20 rounded-xl py-4 px-4 text-slate-700 outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                    errors.heureFin && touched.heureFin ? 'ring-2 ring-red-500' : ''
-                  }`} 
-                />
-                {errors.heureFin && touched.heureFin && (
-                  <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-                    <AlertCircle size={12} />
-                    <span>{errors.heureFin}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* Section: LIEU & TYPE */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 text-[#017EF7]">
-              <MapPin size={20} strokeWidth={2.5} />
-              <h2 className="text-sm font-semibold tracking-wider uppercase">Lieu & Type</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                  <input 
-                    type="text" 
+              {/* Location & Category */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Lieu *</label>
+                  <input
+                    type="text"
                     name="lieu"
                     value={formData.lieu}
                     onChange={handleInputChange}
-                    onBlur={() => handleBlur('lieu')}
-                    placeholder="Lieu de l'événement"
-                    disabled={loading || success}
-                    className={`w-full bg-[#E9F5F8] border-none focus:ring-2 transition duration-200 focus:ring-[#017EF7]/20 rounded-xl py-4 pl-12 pr-4 text-slate-700 font-medium outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                      errors.lieu && touched.lieu ? 'ring-2 ring-red-500' : ''
-                    }`}
+                    placeholder="Ex: Palais des Congrès, Paris"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
                   />
                 </div>
-                {errors.lieu && touched.lieu && (
-                  <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-                    <AlertCircle size={12} />
-                    <span>{errors.lieu}</span>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div className="relative">
-                  <Shapes className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                  <input 
-                    type="text" 
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Catégorie *</label>
+                  <select
                     name="categorie"
                     value={formData.categorie}
                     onChange={handleInputChange}
-                    onBlur={() => handleBlur('categorie')}
-                    placeholder="Catégorie d'événement" 
-                    disabled={loading || success}
-                    className={`w-full bg-[#E9F5F8] border-none focus:ring-2 transition duration-200 focus:ring-[#017EF7]/20 rounded-xl py-4 pl-12 pr-4 text-slate-700 font-medium outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                      errors.categorie && touched.categorie ? 'ring-2 ring-red-500' : ''
-                    }`}
-                  />
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500 text-sm"
+                  >
+                    <option value="">Sélectionner</option>
+                    <option value="CONFERENCE">Conférence</option>
+                    <option value="MARIAGE">Mariage</option>
+                    <option value="ANNIVERSAIRE">Anniversaire</option>
+                    <option value="CONCERT">Concert / Festival</option>
+                    <option value="AUTRE">Autre</option>
+                  </select>
                 </div>
-                {errors.categorie && touched.categorie && (
-                  <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-                    <AlertCircle size={12} />
-                    <span>{errors.categorie}</span>
+              </div>
+
+              {/* Specific Config based on Event Type */}
+              {formData.eventType === 'private' ? (
+                <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-indigo-400" /> Paramètres d'invitation Privée
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Nombre maximum d'invités (Jauge) *</label>
+                    <input
+                      type="number"
+                      name="maxCapacity"
+                      min="1"
+                      value={formData.maxCapacity}
+                      onChange={handleInputChange}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold text-sm"
+                    />
+                  </div>
+
+                  {/* Channel Toggle Buttons (Formula toggle from new.md) */}
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1.5">Canal de diffusion des invitations :</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, channel: 'email' }))}
+                        className={`py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+                          formData.channel === 'email'
+                            ? 'bg-indigo-600 border-indigo-500 text-white'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        <Mail className="w-3.5 h-3.5" /> E-mail (15 FCFA)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, channel: 'whatsapp' }))}
+                        className={`py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+                          formData.channel === 'whatsapp'
+                            ? 'bg-emerald-600 border-emerald-500 text-white'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" /> WhatsApp (30 FCFA)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, channel: 'both' }))}
+                        className={`py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+                          formData.channel === 'both'
+                            ? 'bg-violet-600 border-violet-500 text-white'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        Les deux (45 FCFA)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <Globe className="w-4 h-4 text-indigo-400" /> Paramètres Billetterie Publique
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Capacité Maximale de la Jauge (Places) *</label>
+                    <input
+                      type="number"
+                      name="maxCapacity"
+                      min="10"
+                      value={formData.maxCapacity}
+                      onChange={handleInputChange}
+                      placeholder="Ex: 1000"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white font-semibold text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1.5">Prise en charge des frais de billetterie (2.5% + 250 FCFA) :</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, publicFeeBearer: 'buyer' }))}
+                        className={`py-2 px-3 rounded-lg border text-xs font-semibold transition ${
+                          formData.publicFeeBearer === 'buyer'
+                            ? 'bg-indigo-600 border-indigo-500 text-white'
+                            : 'bg-slate-900 border-slate-800 text-slate-400'
+                        }`}
+                      >
+                        À la charge de l'acheteur
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, publicFeeBearer: 'organizer' }))}
+                        className={`py-2 px-3 rounded-lg border text-xs font-semibold transition ${
+                          formData.publicFeeBearer === 'organizer'
+                            ? 'bg-indigo-600 border-indigo-500 text-white'
+                            : 'bg-slate-900 border-slate-800 text-slate-400'
+                        }`}
+                      >
+                        Déduit de mes gains
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Cover Image */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Affiche de couverture (Optionnel)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition disabled:opacity-50"
+            >
+              {loading ? (
+                <span>Création en cours...</span>
+              ) : (
+                <>
+                  <span>Créer et Accéder à la Facturation</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Dynamic Pricing Side-Panel (Col 5/12) */}
+          <div className="lg:col-span-5 flex flex-col gap-5">
+            <div className="bg-slate-950 border border-slate-800/80 rounded-2xl p-6 shadow-xl relative overflow-hidden flex-1 flex flex-col justify-between">
+              
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div>
+                <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                  <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <CreditCard className="w-4 h-4" /> Devis Dynamique en Temps Réel
+                  </span>
+                  <span className="text-[10px] bg-slate-800 text-slate-300 font-mono px-2 py-0.5 rounded">
+                    Pay-As-You-Go
+                  </span>
+                </div>
+
+                <div className="space-y-3.5 text-sm">
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span>Durée de l'événement :</span>
+                    <span className="font-semibold text-white">{pricingQuote.days} jour(s)</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span>Tarif infrastructure base :</span>
+                    <span className="font-semibold text-white">{Number(pricingQuote.baseFee).toLocaleString('fr-FR')} FCFA</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span>{pricingQuote.channelLabel} :</span>
+                    <span className="font-semibold text-white">{Number(pricingQuote.channelCost).toLocaleString('fr-FR')} FCFA</span>
+                  </div>
+
+                  <div className="border-t border-slate-800/80 pt-3.5 mt-2 flex justify-between items-baseline">
+                    <span className="font-bold text-white text-base">Total Activation :</span>
+                    <div className="text-right">
+                      <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">
+                        {pricingQuote.total.toLocaleString('fr-FR')} FCFA
+                      </span>
+                      <span className="block text-[10px] text-slate-500">TTC</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Formule rappel */}
+                <div className="mt-5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                  <p className="font-semibold text-slate-300">Formule appliquée :</p>
+                  <code className="text-indigo-300 font-mono block">
+                    {formData.eventType === 'public' 
+                      ? `(${pricingQuote.days} j * 5 000 FCFA) + (${formData.maxCapacity} places * 10 FCFA)` 
+                      : `(${pricingQuote.days} j * 2 500 FCFA) + (${formData.maxCapacity} inv * coût canal)`}
+                  </code>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-slate-800/80 space-y-2">
+                <div className="flex items-center gap-2 text-xs text-emerald-400">
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
+                  <span>Activation immédiate du scanner et des envois</span>
+                </div>
+                {formData.eventType === 'public' && (
+                  <div className="flex items-center gap-2 text-xs text-indigo-400">
+                    <Sparkles className="w-4 h-4 shrink-0" />
+                    <span>Accès inclus au Ticket Designer IA & Billetterie</span>
                   </div>
                 )}
               </div>
             </div>
-          </section>
-
-          {/* Section: VISUEL DE COUVERTURE */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 text-[#017EF7]">
-              <ImageIcon size={20} strokeWidth={2.5} />
-              <h2 className="text-sm font-semibold tracking-wider uppercase">Visuel de couverture</h2>
-            </div>
-
-            <div>
-              <input
-                type="file"
-                id="coverImage"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
-                onChange={handleImageChange}
-                disabled={loading || success}
-                className="hidden"
-              />
-              
-              <label 
-                htmlFor="coverImage"
-                className={`border-2 border-dashed rounded-[2rem] p-12 bg-white hover:border-[#017EF7]/30 transition-colors cursor-pointer group block ${
-                  errors.coverImage ? 'border-red-500' : 'border-slate-200'
-                } ${(loading || success) ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {imagePreview ? (
-                  <div className="relative">
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      className="max-h-48 mx-auto rounded-lg object-contain"
-                    />
-                    <p className="text-center text-sm text-green-600 mt-2">
-                      Image sélectionnée ✓
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="w-16 h-16 bg-[#017EF7]/15 rounded-full flex items-center justify-center text-[#017EF7] group-hover:scale-110 transition-transform">
-                      <Upload size={28} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-900">Cliquez pour téléverser une image</p>
-                      <p className="text-xs text-slate-400 mt-1 font-medium leading-relaxed">
-                        PNG, JPG ou WEBP jusqu'à 10MB (1600×900px recommandé)
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </label>
-              
-              {errors.coverImage && (
-                <div className="flex items-center gap-1 mt-2 text-red-500 text-xs">
-                  <AlertCircle size={12} />
-                  <span>{errors.coverImage}</span>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-6 pt-4">
-            <button 
-              onClick={closeModal} 
-              type="button" 
-              disabled={loading || success}
-              className="text-gray-700 hover:scale-105 bg-gray-200 px-5 py-4 rounded-xl cursor-pointer font-bold hover:bg-[#FF5005]/20 hover:text-[#FF5005] transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Annuler
-            </button>
-            <button 
-              type="submit" 
-             
-              disabled={loading || success}
-              className="bg-[#017EF7] hover:scale-105 text-white font-bold px-10 py-4 rounded-2xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              {loading ? 'Création en cours...' : success ? 'Créé avec succès !' : "Créer l'événement"}
-            </button>
           </div>
-        </form>
+
+        </div>
+
       </div>
     </div>
   );

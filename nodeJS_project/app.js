@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
-const {connecter} = require('./db/connect');
+const { connecter } = require('./db/connect');
 const express = require('express');
 const userRouter = require('./routes/user');
 const Authrouter = require('./routes/authRoutes');
@@ -9,16 +9,21 @@ const InviteRouter = require('./routes/invites');
 const QrRouter = require('./routes/generateQrCode');
 const statsRouter = require('./routes/stats');
 const adminStatsRouter = require('./routes/adminStats');
-const geminiRouter = require('./routes/geminiRoutes');
 const templatesRouter = require('./routes/templates');
+const InvitationRouter = require('./routes/invitations');
+const notificationRouter = require('./routes/notification');
+const scanRouter = require('./routes/scan');
+const rsvpRouter = require('./routes/rsvpRoutes');
 const cors = require('cors');
+
 const { startStatusScheduler } = require('./services/eventStatusScheduler');
+const { startDailyReminderScheduler } = require('./services/dailyReminderScheduler');
+const { startInvitationScheduler } = require('./services/invitationSchedulerService');
 
 require('dotenv').config();
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsDoc = require('swagger-jsdoc');
-const InvitationRouter = require('./routes/invitations');
 const swaggerSpec = swaggerJsDoc({
     swaggerDefinition: {
         openapi: '3.0.0',
@@ -27,84 +32,86 @@ const swaggerSpec = swaggerJsDoc({
             version: '1.0.0',
         },
     },
-    apis: ['./routes/*.js'], // path where API docs are located
+    apis: ['./routes/*.js'],
 });
 
 const corsOptions = {
-  // Origines autorisées (votre frontend React)
   origin: [
-    'http://localhost:5173', // URL de développement
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
   ],
-  
-  // Méthodes HTTP autorisées
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  
-  // Headers autorisés
   allowedHeaders: [
     'Content-Type',
     'Authorization',
+    'x-refresh-token',
     'X-Requested-With',
     'Accept',
     'Origin'
   ],
-  
-  // Headers exposés au frontend
-  exposedHeaders: ['X-Total-Count', 'X-Token-Expired'],
-  
-  // Autoriser les cookies / credentials
+  exposedHeaders: ['X-Total-Count', 'X-Token-Expired', 'X-New-Access-Token'],
   credentials: true,
-  
-  // Durée de cache de la pré-vol (en secondes)
-  maxAge: 86400, // 24 heures
-  
-  // Code de succès pour les requêtes OPTIONS
+  maxAge: 86400,
   optionsSuccessStatus: 200
 };
 
+const app = express();
 
-const app = express()
-
-// Appliquer CORS globalement
 app.use(cors(corsOptions));
 const path = require('path');
 
-// Servir les fichiers statiques uploadés (ex: /uploads/filename.jpg)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-const port = process.env.PORT || 8000
+const port = process.env.PORT || 8000;
 const url = process.env.MONGO_URI;
 
-//middleware pour parser les données envoyées dans le corps de la requête
-app.use(express.json())
+app.use(express.json({ limit: '25mb' }));
 app.use(cookieParser());
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
-//middleware pour parser les données envoyées dans le corps de la requête en format urlencoded
-// Documentation Swagger accessible à l'URL /api-docs
+const publicTicketsRouter = require('./routes/publicTickets');
+const aiRouter = require('./routes/aiRoutes');
+const socialRouter = require('./routes/socialRoutes');
+const pollRouter = require('./routes/pollRoutes');
+const reminderRouter = require('./routes/reminderRoutes');
+const feedbackRouter = require('./routes/feedbackRoutes');
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use(express.urlencoded({extended: true}))
 
-//importation des routes
+// Montage des routes principales
 app.use("/api", userRouter);
 app.use("/api/auth", Authrouter);
 app.use("/api/event", eventRouter);
+app.use("/api/public", publicTicketsRouter);
 app.use("/api/invite", InviteRouter);
+app.use('/api/scan', scanRouter);
 app.use("/api/qrcode", QrRouter);
 app.use("/api/invitations", InvitationRouter);
+app.use("/api/rsvp", rsvpRouter);
+app.use("/api/notification", notificationRouter);
 app.use("/api/user", statsRouter);
 app.use("/api", adminStatsRouter);
-app.use("/api/gemini", geminiRouter);
 app.use("/api/templates", templatesRouter);
+app.use("/api/ai", aiRouter);
+app.use("/api/social", socialRouter);
+app.use("/api/polls", pollRouter);
+app.use("/api/reminders", reminderRouter);
+app.use("/api/feedback", feedbackRouter);
 
-//connexion a la BD
-connecter(url, (error)=>{
-    if(error){
-        console.log("erreur de connexion a mongoDB", error);
-        process.exit(-1)
-    }else{
-        console.log("connexion a mongoDB reussit !")
-        // Démarrer le planificateur de statuts
+// Connexion à la base de données
+connecter(url, (error) => {
+    if (error) {
+        console.log("Erreur de connexion à MongoDB", error);
+        process.exit(-1);
+    } else {
+        console.log("Connexion à MongoDB réussie !");
+        // Démarrer les planificateurs et crons automatiques
         startStatusScheduler();
-        app.listen({port},()=>{
-            console.log(`server is running on port ${port}`);
-        })
+        startDailyReminderScheduler();
+        startInvitationScheduler();
+
+        app.listen(port, () => {
+            console.log(`🚀 Serveur démarré sur le port ${port}`);
+        });
     }
-})
+});

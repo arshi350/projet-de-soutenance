@@ -9,7 +9,7 @@ function parseArgs() {
 
   for (let i = 0; i < rawArgs.length; i++) {
     const arg = rawArgs[i];
-    if (arg === '--help' || arg === '-h') {
+    if (arg === '--help' || arg === '-h') { 
       args.help = true;
       continue;
     }

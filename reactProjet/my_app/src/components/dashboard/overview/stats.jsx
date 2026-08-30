@@ -1,107 +1,115 @@
-import { useEffect } from 'react';
-import { Calendar, Layers, Users, BarChart3 } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Calendar, Layers, Users, BarChart3, TrendingUp, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useUserStats } from '../../../hooks/useUserStats';
 import { useCurrentUser } from '../../../hooks/useAuth';
 
-
 const DashboardStats = () => {
-   const { stats, loading, error, fetchUserStats } = useUserStats();
-   const {user} = useCurrentUser();
-   const userId = user?.id
-   const token = localStorage.getItem('accessToken');
+  const { stats, loading, error, fetchUserStats } = useUserStats();
+  const { user } = useCurrentUser();
+  const userId = user?.id || user?._id;
+  const token = localStorage.getItem('accessToken');
 
-   useEffect(()=>{
-    if(token && userId){
+  useEffect(() => {
+    if (token && userId) {
       fetchUserStats(userId, token);
     }
-   },[fetchUserStats, userId, token])
+  }, [fetchUserStats, userId, token]);
 
-  const Stats = [
+  const statCards = [
     {
-      label: 'Total événements',
+      label: 'Total Événements',
       value: stats?.totalEvents ?? 0,
       trend: '+12%',
-      trendColor: 'text-emerald-500 bg-emerald-50',
-      icon: <Calendar className="text-blue-600" size={20} />,
-      color: 'text-blue-600',
-      iconBg: 'bg-blue-50',
+      trendColor: 'text-emerald-500 bg-emerald-50 border-emerald-200',
+      icon: <Calendar className="text-[#FF5005]" size={20} />,
+      iconBg: 'bg-orange-500/10 border-orange-500/20',
+      color: 'text-gray-900',
     },
     {
-      label: 'Événements actifs',
+      label: 'Événements Actifs',
       value: stats?.activeEvents ?? 0,
-      trend: 'Stable',
-      trendColor: 'text-slate-500 bg-slate-100',
-      icon: <Layers className="text-amber-600" size={20} />,
-      color: 'text-amber-600',
-      iconBg: 'bg-amber-50',
+      trend: 'En cours',
+      trendColor: 'text-orange-500 bg-orange-50 border-orange-200',
+      icon: <Layers className="text-[#EFB810]" size={20} />,
+      iconBg: 'bg-amber-500/10 border-amber-500/20',
+      color: 'text-gray-900',
     },
     {
-      label: 'Total invités',
+      label: 'Invités Totaux',
       value: stats?.totalAttendees ?? 0,
       trend: '+4.5k',
-      trendColor: 'text-emerald-500 bg-emerald-50',
-      icon: <Users className="text-orange-600" size={20} />,
-      color: 'text-orange-600',
-      iconBg: 'bg-orange-50',
+      trendColor: 'text-emerald-500 bg-emerald-50 border-emerald-200',
+      icon: <Users className="text-blue-600" size={20} />,
+      iconBg: 'bg-blue-500/10 border-blue-500/20',
+      color: 'text-gray-900',
     },
     {
-      label: 'Taux de présence moyen',
+      label: 'Taux de Présence',
       value: '84.2%',
-      trend: '-2%',
-      trendColor: 'text-red-500 bg-red-50',
-      icon: <BarChart3 className="text-purple-600" size={20} />,
-      color: 'text-purple-600',
-      iconBg: 'bg-purple-50',
+      trend: '+4.8%',
+      trendColor: 'text-emerald-500 bg-emerald-50 border-emerald-200',
+      icon: <BarChart3 className="text-emerald-500" size={20} />,
+      iconBg: 'bg-emerald-500/10 border-emerald-500/20',
+      color: 'text-gray-900',
     },
   ];
 
   const date = new Date();
-  const options = { month: 'long', day: 'numeric', year: 'numeric' };
-  const formattedDate = date.toLocaleDateString('fr-FR', options);
+  const formattedDate = date.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
 
   return (
-    <div className="p-10 mb-10 font">
+    <div className="font-sans mb-8">
       {/* Header Section */}
-      <div className="flex justify-between items-start mb-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 leading-tight tracking-tight">
-            BIENVENUE DANS VOTRE<br /><span className='text-[#0180FA]'>ESPACE DE TRAVAIL</span>
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#FF5005]">
+            Espace Organisateur VIP
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight mt-0.5">
+            Tableau de Bord & Performance
           </h1>
-          <p className="text-slate-500 mt-2 font-medium">
-            Voici l'état actuel de vos événements pour aujourd'hui.
-          </p>
         </div>
 
         {/* Date Display */}
-        <div className="flex items-center gap-3 bg-[#FF5005] backdrop-blur-sm p-2 pr-4 rounded-xl ">
-          <div className="bg-white p-2 rounded-lg shadow-sm">
-            <Calendar className="text-[#FF5005]" size={20} />
+        <div className="flex items-center gap-3 bg-white border border-gray-200/80 px-4 py-2 rounded-2xl shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-orange-500/10 text-[#FF5005] flex items-center justify-center">
+            <Calendar size={16} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-white/90 uppercase tracking-wider">Date actuelle</p>
-            <p className="text-sm font-bold text-white">{formattedDate}</p>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Aujourd'hui</p>
+            <p className="text-xs font-bold text-gray-800 capitalize">{formattedDate}</p>
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {Stats.map((stat, index) => (
-          <div key={index} className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl transition duration-300">
-            <div className="flex justify-between items-start mb-6">
-              <div className={`${stat.iconBg} p-3 rounded-xl`}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {statCards.map((stat, index) => (
+          <motion.div 
+            key={index}
+            whileHover={{ y: -4, boxShadow: "0 20px 40px -15px rgba(0,0,0,0.06)" }}
+            className="bg-white p-6 rounded-3xl border border-gray-200/80 shadow-sm transition-all text-left group"
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className={`w-11 h-11 rounded-2xl border flex items-center justify-center ${stat.iconBg}`}>
                 {stat.icon}
               </div>
-              <span className={`text-[11px] font-bold px-2 py-1 rounded-full ${stat.trendColor}`}>
+              <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${stat.trendColor}`}>
                 {stat.trend}
               </span>
             </div>
             
             <div>
-              <p className="text-slate-500 text-sm font-medium mb-1">{stat.label}</p>
-              <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+              <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
+              <p className={`text-3xl font-black ${stat.color} tracking-tight`}>{stat.value}</p>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>

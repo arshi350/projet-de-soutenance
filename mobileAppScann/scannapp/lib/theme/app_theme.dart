@@ -8,17 +8,17 @@ class AppTheme {
       useMaterial3: true,
       primaryColor: AppColors.orange,
       scaffoldBackgroundColor: AppColors.background,
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.orange,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           color: AppColors.white,
           fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.white,
         selectedItemColor: AppColors.orange,
         unselectedItemColor: AppColors.grey,

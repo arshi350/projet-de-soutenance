@@ -9,6 +9,7 @@ class GuestModel {
   String? scanTime;
   final bool isVip;
   final String? qrCode;
+  final String? idEvent;
 
   GuestModel({
     required this.id,
@@ -20,26 +21,39 @@ class GuestModel {
     this.scanTime,
     this.isVip = false,
     this.qrCode,
+    this.idEvent, required String nom, required String prenom, required String telephone, required bool isScanned, required bool isPresent,
   });
 
-  String get fullName => '$firstName $lastName';
-  String get initials => '${firstName[0]}${lastName[0]}'.toUpperCase();
+  // Getters d'alias pour la compatibilité FR / anciens accès
+  String get nom => lastName.isNotEmpty ? lastName : firstName;
+  String get prenom => firstName;
+  String? get telephone => phone;
+  bool get isScanned => status == 'present' || scanTime != null;
+  bool get isPresent => status == 'present';
+
+  String get fullName => '$firstName $lastName'.trim();
+  String get initials {
+    final f = firstName.isNotEmpty ? firstName[0] : '';
+    final l = lastName.isNotEmpty ? lastName[0] : '';
+    final combined = '$f$l';
+    return combined.isNotEmpty ? combined.toUpperCase() : '?';
+  }
 
   factory GuestModel.fromJson(Map<String, dynamic> json) {
     return GuestModel(
       id: json['id'] ?? json['_id'] ?? '',
-      firstName: json['firstName'] ?? json['prenom'] ?? '',
-      lastName: json['lastName'] ?? json['nom'] ?? '',
+      firstName: json['firstName'] ?? json['prenom'] ?? json['nom'] ?? '',
+      lastName: json['lastName'] ?? (json['prenom'] != null ? json['nom'] ?? '' : ''),
       email: json['email'] ?? '',
       phone: json['phone'] ?? json['telephone'],
-      status: json['status'] ?? 'pending',
-      scanTime: json['scanTime'],
+      status: json['status'] ?? (json['isPresent'] == true ? 'present' : 'pending'),
+      scanTime: json['scanTime'] ?? json['scannedAt'],
       isVip: json['isVip'] ?? json['vip'] ?? false,
       qrCode: json['qrCode'],
+      idEvent: json['idEvent'] ?? json['eventId'],
     );
   }
 
-  // ✅ AJOUT DE LA MÉTHODE toJson
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -51,10 +65,10 @@ class GuestModel {
       'scanTime': scanTime,
       'isVip': isVip,
       'qrCode': qrCode,
+      'idEvent': idEvent,
     };
   }
 
-  // ✅ Copie avec modifications
   GuestModel copyWith({
     String? id,
     String? firstName,
@@ -65,6 +79,7 @@ class GuestModel {
     String? scanTime,
     bool? isVip,
     String? qrCode,
+    String? idEvent,
   }) {
     return GuestModel(
       id: id ?? this.id,
@@ -76,6 +91,7 @@ class GuestModel {
       scanTime: scanTime ?? this.scanTime,
       isVip: isVip ?? this.isVip,
       qrCode: qrCode ?? this.qrCode,
+      idEvent: idEvent ?? this.idEvent,
     );
   }
 }

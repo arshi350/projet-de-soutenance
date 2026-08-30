@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { addEvent, getUserEvents, getRecentEvents, getRecentEvent, deleteEvent, updateEvent, getAllEventsAdmin } from '../services/eventService';
+import { addEvent, getUserEvents, getRecentEvents, getRecentEvent, getEventById, getRecentScannedInvites, deleteEvent, updateEvent, getAllEventsAdmin } from '../services/eventService';
 
 //hook ajouter un événement
 export const useAddEvent = () => {
@@ -187,6 +187,80 @@ export const useGetRecentEvent = (token, autoFetch = true) => {
   }, [autoFetch, token, fetchRecentEvent]);
 
   return { recentEvent, loading, error, refetch: fetchRecentEvent };
+};
+
+export const useGetEventById = (eventId, token, autoFetch = true) => {
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchEvent = useCallback(async () => {
+    if (!eventId) {
+      setError('ID d\'événement manquant');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await getEventById(eventId, token);
+      setEvent(response.event || response.data || response);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de la récupération de l\'événement';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId, token]);
+
+  useEffect(() => {
+    if (autoFetch && eventId) {
+      fetchEvent();
+    }
+  }, [autoFetch, eventId, fetchEvent]);
+
+  return { event, loading, error, refetch: fetchEvent };
+};
+
+export const useGetRecentScannedInvites = (eventId, token, limit = 4, autoFetch = true) => {
+  const [scannedInvites, setScannedInvites] = useState([]);
+  const [scannedCount, setScannedCount] = useState(0);
+  const [presentCount, setPresentCount] = useState(0);
+  const [totalInvites, setTotalInvites] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchScannedInvites = useCallback(async () => {
+    if (!eventId) {
+      setError('ID d\'événement manquant');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await getRecentScannedInvites(eventId, token, limit);
+      setScannedInvites(response.scannedInvites || response.data || []);
+      setScannedCount(response.scannedCount || 0);
+      setPresentCount(response.presentCount || 0);
+      setTotalInvites(response.totalInvites || 0);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de la récupération des invités scannés';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId, token, limit]);
+
+  useEffect(() => {
+    if (autoFetch && eventId) {
+      fetchScannedInvites();
+    }
+  }, [autoFetch, eventId, fetchScannedInvites]);
+
+  return { scannedInvites, scannedCount, presentCount, totalInvites, loading, error, refetch: fetchScannedInvites };
 };
 
 //HOOK POUR SUPPRIMER UN ÉVÉNEMENT

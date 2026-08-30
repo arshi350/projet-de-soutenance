@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { addInvite, deleteInvite, updateInvite, getInvitesByEvent } from '../services/inviteService';
+import { addInvite, deleteInvite, updateInvite, getInvitesByEvent, importInvites } from '../services/inviteService';
 
 export const useAddInvite = (token) => {
   const [loading, setLoading] = useState(false);
@@ -160,3 +160,47 @@ export const useDeleteInvite = (token, onSuccess) => {
 
   return { deleteInviteById, loading, error, success, deletedId, reset };
 };
+
+export const useImportInvites = (token, onSuccess) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+
+  const uploadFile = async (eventId, file) => {
+    if (!eventId) {
+      setError("ID d'événement manquant");
+      return;
+    }
+    if (!file) {
+      setError("Aucun fichier sélectionné");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const data = await importInvites(eventId, file, token);
+      setResult(data);
+      if (onSuccess) {
+        onSuccess(data);
+      }
+      return data;
+    } catch (err) {
+      const errorMessage = err.message || err.response?.data?.message || "Erreur lors de l'importation du fichier Excel";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reset = () => {
+    setLoading(false);
+    setError(null);
+    setResult(null);
+  };
+
+  return { uploadFile, loading, error, result, reset };
+};

@@ -9,7 +9,7 @@ export function AdminDashboard() {
    <>
     <section className="min-h-screen bg-gray-100">
         <AdminHeader />
-        <main className="px-6 py-8">
+        <main className="px-5 py-5">
           <Outlet />
         </main>
     </section>

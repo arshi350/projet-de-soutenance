@@ -1,177 +1,164 @@
-import React from 'react';
-import { TrendingUp, PieChart, ChevronDown } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { TrendingUp, PieChart as PieIcon, Layers, Sparkles, Clock, QrCode } from 'lucide-react';
+import axios from 'axios';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
   ResponsiveContainer,
-  ReferenceDot,
   PieChart as RechartsPieChart,
   Pie,
   Cell
 } from 'recharts';
 
-// --- DONNÉES SIMULÉES ---
-const lineData = [
-  { time: '19h00', presence: 40 },
-  { time: '', presence: 50 },
-  { time: '20h00', presence: 110 },
-  { time: '', presence: 180 },
-  { time: '21h00', presence: 312 }, // Peak
-  { time: '', presence: 200 },
-  { time: '22h00', presence: 120 },
-  { time: '', presence: 55 },
-  { time: '23h00', presence: 40 },
-];
+const API_BASE = 'http://localhost:3000/api';
+const COLORS = ['#FF5005', '#EFB810', '#10B981', '#0B1727', '#8B5CF6'];
 
-const pieData = [
-  { name: 'Présents', value: 92, color: '#10B981' }, // Vert
-  { name: 'Absents', value: 5, color: '#EF4444' },   // Rouge
-  { name: 'Attente', value: 3, color: '#F59E0B' },   // Orange/Ambre
-];
+export default function EventAnalytics({ eventInfo }) {
+  const { eventId: routeEventId } = useParams();
+  const eventId = eventInfo?._id || eventInfo?.id || routeEventId;
 
-export default function EventAnalytics() {
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      if (!eventId) return;
+      try {
+        setLoading(true);
+        const res = await axios.get(`${API_BASE}/scan/stats/${eventId}`);
+        if (res.data.success) {
+          setAnalyticsData(res.data);
+        }
+      } catch (err) {
+        console.warn("Erreur chargement analytique :", err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+    const interval = setInterval(fetchAnalytics, 20000);
+    return () => clearInterval(interval);
+  }, [eventId]);
+
+  const timelineData = analyticsData?.timeline || [
+    { time: '08h00', presence: 0 },
+    { time: '12h00', presence: 0 },
+    { time: '16h00', presence: 0 },
+    { time: '20h00', presence: 0 }
+  ];
+
+  const categoryDistribution = analyticsData?.categoryDistribution || [
+    { name: 'Standard', total: 10, scanned: 0 },
+    { name: 'VIP', total: 5, scanned: 0 }
+  ];
+
+  const pieData = categoryDistribution.map(c => ({
+    name: c.name,
+    value: c.total || 1
+  }));
+
   return (
-    <div className="px-60 font p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 font-sans">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 font-sans space-y-6 text-left text-slate-900">
       
-      {/* --- GRAPHIC 1 : PRÉSENCE DANS LE TEMPS (Prend 2 colonnes sur grand écran) --- */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 lg:col-span-2 flex flex-col justify-between">
-        {/* Header du graphique */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-[#FF5005]" />
-            <h3 className="text-base font-bold text-gray-800">Présence dans le temps</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Flux Temporel des Scans */}
+        <div className="lg:col-span-8 bg-white border border-gray-200/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-orange-50 text-[#FF5005] rounded-2xl">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-gray-900">Flux des Scans d'Entrée en Temps Réel</h3>
+                <p className="text-xs text-gray-400">Passages certifiés par tranche horaire</p>
+              </div>
+            </div>
+            <span className="text-xs font-mono font-bold text-[#FF5005] bg-orange-50 border border-orange-200/60 px-3 py-1 rounded-xl">
+              Live Monitoring
+            </span>
           </div>
-          
-          {/* Dropdown Filtre */}
-          <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50 transition-all">
-            <span>Aujourd'hui</span>
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-        </div>
 
-        {/* Zone de la courbe */}
-        <div className="w-full h-64 relative">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={lineData} margin={{ top: 30, right: 10, left: 10, bottom: 0 }}>
-              <defs>
-                {/* Dégradé sous la courbe orange */}
-                <linearGradient id="colorPresence" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#FF5005" stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor="#FF5005" stopOpacity={0.0}/>
-                </linearGradient>
-              </defs>
-              
-              <XAxis 
-                dataKey="time" 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: '#94A3B8' }}
-                interval={0}
-              />
-              {/* YAxis masqué pour correspondre au design épuré */}
-              <YAxis hide={true} domain={[0, 350]} />
-              
-              <Tooltip 
-                cursor={{ stroke: '#E2E8F0', strokeWidth: 1, strokeDasharray: '4 4' }}
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-gray-900 text-white text-xs px-2.5 py-1.5 rounded shadow-md font-semibold">
-                        {payload[0].value} présents
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-
-              {/* Rendu de la ligne de zone */}
-              <Area 
-                type="monotone" 
-                dataKey="presence" 
-                stroke="#FF5005" 
-                strokeWidth={2.5} 
-                fillOpacity={1} 
-                fill="url(#colorPresence)" 
-              />
-
-              {/* Point personnalisé pour le "Peak 20h15" (Index 4 du tableau de données) */}
-              <ReferenceDot
-                x="21h00" // Aligné sur la data
-                y={312}
-                r={6}
-                fill="#FF5005"
-                stroke="#FFF"
-                strokeWidth={3}
-                label={{
-                  value: 'Peak 20h15',
-                  position: 'top',
-                  offset: 12,
-                  fill: '#1E293B',
-                  fontSize: 12,
-                  fontWeight: 'bold'
-                }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* --- GRAPHIC 2 : RÉPARTITION STATUTS (Prend 1 colonne) --- */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
-        {/* Header du graphique */}
-        <div className="flex items-center gap-2 mb-4">
-          <PieChart className="w-5 h-5 text-blue-600" />
-          <h3 className="text-base font-bold text-gray-800">Répartition statuts</h3>
-        </div>
-
-        {/* Zone Donut Chart */}
-        <div className="w-full h-48 relative flex items-center justify-center">
-          <ResponsiveContainer width="100%" height="100%">
-            <RechartsPieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={65}
-                outerRadius={80}
-                startAngle={90}
-                endAngle={-270}
-                paddingAngle={0}
-                dataKey="value"
-              >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} cornerRadius={index === 0 ? 10 : 0} />
-                ))}
-              </Pie>
-            </RechartsPieChart>
-          </ResponsiveContainer>
-
-          {/* Indicateur Central de Total */}
-          <div className="absolute text-center flex flex-col items-center justify-center">
-            <span className="text-3xl font-extrabold text-gray-800 tracking-tight">340</span>
-            <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase">Total</span>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+              <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="scanGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#FF5005" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#FF5005" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} allowDecimals={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#0B1727', borderRadius: '14px', border: 'none', color: '#fff', fontSize: '12px' }}
+                  formatter={(value) => [`${value} scan(s)`, 'Validations']}
+                />
+                <Area type="monotone" dataKey="presence" stroke="#FF5005" strokeWidth={3} fillOpacity={1} fill="url(#scanGradient)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Légendes personnalisées en bas */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 pt-4 border-t border-gray-50">
-          <div className="flex items-center gap-2 text-xs font-medium text-gray-700">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shrink-0"></span>
-            <span>92% Présents</span>
+        {/* Répartition par Catégorie de Billets */}
+        <div className="lg:col-span-4 bg-white border border-gray-200/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-50 text-[#EFB810] rounded-2xl">
+                <PieIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm text-gray-900">Répartition Pass</h3>
+                <p className="text-xs text-gray-400">Paliers de billets</p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs font-medium text-gray-700">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444] shrink-0"></span>
-            <span>5% Absents</span>
+
+          <div className="h-52 w-full flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={180}>
+              <RechartsPieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={45}
+                  outerRadius={75}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#0B1727', borderRadius: '14px', border: 'none', color: '#fff', fontSize: '12px' }}
+                  formatter={(value) => [`${value} billet(s)`, 'Quota']}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
           </div>
-          <div className="flex items-center gap-2 text-xs font-medium text-gray-700 col-span-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] shrink-0"></span>
-            <span>3% Attente</span>
+
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            {categoryDistribution.map((cat, idx) => (
+              <div key={idx} className="flex justify-between items-center text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                  <span className="font-bold text-gray-800">{cat.name}</span>
+                </div>
+                <span className="font-extrabold text-gray-900">
+                  {cat.scanned || 0} / {cat.total} scannés
+                </span>
+              </div>
+            ))}
           </div>
+
         </div>
+
       </div>
 
     </div>

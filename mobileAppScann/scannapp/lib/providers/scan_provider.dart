@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class ScanProvider extends ChangeNotifier {
   int _totalScans = 0;
   int _successfulScans = 0;
-  List<Map<String, dynamic>> _scanHistory = [];
+  final List<Map<String, dynamic>> _scanHistory = [];
 
   int get totalScans => _totalScans;
   int get successfulScans => _successfulScans;

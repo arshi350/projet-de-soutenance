@@ -95,32 +95,28 @@ class _ScanPageState extends State<ScanPage> {
           ),
         );
       } else if (result.alreadyScanned) {
-        // QR déjà scanné (HTTP 409 Conflict)
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ScanWarningPage(
-              event: widget.event,
-              guest: result.guest ??
-                  GuestModel(
-                    id: '',
-                    nom: 'Billet Déjà Scanné'
-                    prenom: '',
-                    email: '',
-                    telephone: '',
-                    status: 'Invalide',
-                    isScanned: true,
-                    isPresent: true,
-                    idEvent: widget.event.id,
-                    firstName: '',
-                    lastName: '',
-                  ),
-              scannedAt: result.scannedAt,
-              errorMessage: result.error,
+          // QR déjà scanné (HTTP 409 Conflict)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ScanWarningPage(
+                event: widget.event,
+                guest: result.guest ??
+                    GuestModel(
+                      id: '',
+                      firstName: 'Billet',
+                      lastName: 'Déjà Scanné',
+                      email: '',
+                      phone: '',
+                      status: 'present',
+                      idEvent: widget.event.id,
+                    ),
+                scannedAt: result.scannedAt,
+                errorMessage: result.error,
+              ),
             ),
-          ),
-        );
-      } else {
+          );
+        } else {
         // QR invalide ou révoqué
         Navigator.pushReplacement(
           context,

@@ -82,6 +82,51 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> loginWithGoogle(String token, {String? email}) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await ApiService.googleLogin(token, email: email, requireExisting: true);
+
+      final accessToken = response['accessToken'] as String?;
+      if (accessToken == null) {
+        _error = 'Token non reçu du serveur';
+        notifyListeners();
+        return false;
+      }
+
+      final userInfo = response['user'] as Map<String, dynamic>? ?? {};
+      final userId =
+          (userInfo['id'] ?? userInfo['_id'] ?? userInfo['userId'])?.toString();
+
+      if (userId == null) {
+        _error = 'ID utilisateur non reçu';
+        notifyListeners();
+        return false;
+      }
+
+      _token = accessToken;
+      _userId = userId;
+      _user = userInfo;
+
+      await StorageService.saveToken(accessToken);
+      await StorageService.saveUserId(userId);
+      ApiService.setAuthToken(accessToken);
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> connectToEventByCode(String eventId, String eventCode) async {
     _isLoading = true;
     _error = null;

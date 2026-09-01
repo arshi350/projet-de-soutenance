@@ -61,18 +61,38 @@ const AdminEvents = () => {
   const [currentFilter, setCurrentFilter] = useState("Tous");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Handler pour changer le statut d'un événement (Modération)
-  const handleUpdateStatus = (id, newStatus) => {
-    setEvents(prevEvents => 
-      prevEvents.map(evt => evt.id === id ? { ...evt, status: newStatus } : evt)
-    );
+  // Handler pour changer le statut d'un événement (Modération avec API backend)
+  const handleUpdateStatus = async (id, newStatus) => {
+    try {
+      const { updateEventStatusAdminApi } = await import('../../../services/eventService');
+      const apiStatusMap = {
+        'Publié': 'en cours',
+        'En attente': 'en attente',
+        'Signalé': 'signale',
+        'Terminés': 'terminer'
+      };
+      await updateEventStatusAdminApi(id, apiStatusMap[newStatus] || newStatus.toLowerCase(), token);
+      setEvents(prevEvents => 
+        prevEvents.map(evt => evt.id === id ? { ...evt, status: newStatus } : evt)
+      );
+      if (refetch) refetch();
+    } catch (err) {
+      alert(err.message || 'Erreur lors du changement de statut');
+    }
   };
 
-  // Handler pour mettre en avant un événement
-  const handleFeatureEvent = (id) => {
-    setEvents(prevEvents =>
-      prevEvents.map(evt => evt.id === id ? { ...evt, featured: !evt.featured } : evt)
-    );
+  // Handler pour mettre en avant un événement via API backend
+  const handleFeatureEvent = async (id) => {
+    try {
+      const { toggleFeaturedEventAdminApi } = await import('../../../services/eventService');
+      const res = await toggleFeaturedEventAdminApi(id, token);
+      setEvents(prevEvents =>
+        prevEvents.map(evt => evt.id === id ? { ...evt, featured: res.featured } : evt)
+      );
+      if (refetch) refetch();
+    } catch (err) {
+      alert(err.message || 'Erreur lors de la mise en avant');
+    }
   };
 
   // Filtrage et recherche combinés en temps réel

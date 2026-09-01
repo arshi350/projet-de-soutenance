@@ -28,6 +28,9 @@ dependencies:
   # Stockage local
   shared_preferences: ^2.2.2
   
+  # Auth Google
+  google_sign_in: ^6.2.1
+  
   # Utilitaires
   intl: ^0.18.1
 

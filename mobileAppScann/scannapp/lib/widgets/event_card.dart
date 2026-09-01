@@ -1,5 +1,6 @@
 // lib/widgets/event_card.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/event_model.dart';
 import '../theme/app_colors.dart';
@@ -23,15 +24,19 @@ class EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -41,27 +46,39 @@ class EventCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.orange.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.orange.withValues(alpha: 0.3),
+                  ),
                 ),
-                child:
-                    const Icon(Icons.event, color: AppColors.orange, size: 20),
+                child: const Icon(
+                  Icons.event_seat_rounded,
+                  color: AppColors.orange,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  event.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.black,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.name,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.white,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              // Show "connecte" badge when this event is the currently selected one
+              // Badge statut "Connecté"
               Builder(builder: (context) {
                 final auth = Provider.of<AuthProvider>(context);
                 final bool isConnected = auth.currentEvent != null &&
@@ -69,74 +86,100 @@ class EventCard extends StatelessWidget {
 
                 if (isConnected) {
                   return Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: AppColors.green.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border:
-                          Border.all(color: AppColors.green.withValues(alpha: 0.2)),
-                    ),
-                    child: const Text(
-                      'connecte',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.green,
+                      color: AppColors.green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.green.withValues(alpha: 0.4),
                       ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: AppColors.green,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.green,
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Actif',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.green,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }
                 return const SizedBox.shrink();
               }),
-              const Icon(Icons.more_horiz, color: AppColors.grey, size: 20),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 14, color: AppColors.grey),
+              const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.grey),
               const SizedBox(width: 6),
               Text(
                 '${event.formattedDate}, ${event.time}',
-                style: const TextStyle(fontSize: 13, color: AppColors.grey),
+                style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.grey),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Row(
             children: [
-              const Icon(Icons.location_on, size: 14, color: AppColors.grey),
+              const Icon(Icons.location_on_rounded, size: 14, color: AppColors.grey),
               const SizedBox(width: 6),
               Text(
                 event.location,
-                style: const TextStyle(fontSize: 13, color: AppColors.grey),
+                style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.grey),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          const Divider(color: AppColors.greyLight, height: 1),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          Container(
+            height: 1,
+            color: AppColors.white.withValues(alpha: 0.08),
+          ),
+          const SizedBox(height: 14),
           Row(
             children: [
               _buildStatItem(
-                  Icons.people_outline, '${event.totalGuests} invités'),
+                Icons.people_outline_rounded,
+                '${event.totalGuests} invités',
+              ),
               const SizedBox(width: 16),
               _buildStatItem(
-                  Icons.qr_code_scanner, '${event.scannedGuests} scannés'),
+                Icons.qr_code_scanner_rounded,
+                '${event.scannedGuests} scannés',
+              ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
+                  color: AppColors.green.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${(event.attendanceRate * 100).toInt()}%',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
                     color: AppColors.green,
                   ),
                 ),
@@ -148,59 +191,55 @@ class EventCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: event.attendanceRate,
-              backgroundColor: AppColors.greyLight,
+              backgroundColor: AppColors.greyLight.withValues(alpha: 0.3),
               color: AppColors.orange,
-              minHeight: 6,
+              minHeight: 7,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   onPressed: onGuestsPressed,
+                  icon: const Icon(Icons.people_alt_outlined, size: 16),
+                  label: const Text('Invités'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.orange,
-                    side: const BorderSide(color: AppColors.orange),
+                    foregroundColor: AppColors.grey,
+                    side: BorderSide(color: AppColors.white.withValues(alpha: 0.2)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
-                  child: const Text('Invités'),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   onPressed: onStatsPressed,
+                  icon: const Icon(Icons.show_chart_rounded, size: 16),
+                  label: const Text('Stats'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.blue,
-                    side: const BorderSide(color: AppColors.blue),
+                    foregroundColor: AppColors.grey,
+                    side: BorderSide(color: AppColors.white.withValues(alpha: 0.2)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
-                  child: const Text('Stats'),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: ElevatedButton.icon(
               onPressed: onScanPressed,
+              icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+              label: const Text('Scannez les entrées →'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.orange,
                 foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shadowColor: AppColors.orangeGlow,
+                elevation: 4,
               ),
-              child: const Text('Scannez les entrées →'),
             ),
           ),
         ],
@@ -212,12 +251,17 @@ class EventCard extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, size: 14, color: AppColors.grey),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         Text(
           text,
-          style: const TextStyle(fontSize: 12, color: AppColors.grey),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            color: AppColors.grey,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
   }
 }
+

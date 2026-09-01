@@ -1,5 +1,6 @@
 import 'package:arshievent_scan/models/event_model.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/event_provider.dart';
@@ -37,18 +38,15 @@ class _EventsListPageState extends State<EventsListPage> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final eventProvider = Provider.of<EventProvider>(context, listen: false);
 
-    // Récupérer l'ID de l'utilisateur connecté
     final userId = authProvider.userId;
     final token = authProvider.token;
 
     if (userId == null) {
-      // Si userId est null, essayer de le restaurer depuis le stockage
       await authProvider.initializeAuth();
       final newUserId = authProvider.userId;
       final newToken = authProvider.token;
 
       if (newUserId != null && newToken != null) {
-        // Assurer que le token est défini dans ApiService
         ApiService.setAuthToken(newToken);
         try {
           await eventProvider.fetchUserEvents(newUserId);
@@ -65,7 +63,6 @@ class _EventsListPageState extends State<EventsListPage> {
           return;
         }
       } else {
-        // Afficher un message d'erreur
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -76,7 +73,6 @@ class _EventsListPageState extends State<EventsListPage> {
         }
       }
     } else {
-      // Assurer que le token est défini dans ApiService
       ApiService.setAuthToken(token);
       try {
         await eventProvider.fetchUserEvents(userId);
@@ -113,7 +109,6 @@ class _EventsListPageState extends State<EventsListPage> {
       return;
     }
 
-    // Si aucun événement sélectionné, afficher un message
     if (!authProvider.hasEventSelected) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -129,7 +124,6 @@ class _EventsListPageState extends State<EventsListPage> {
       return;
     }
 
-    // Changer l'onglet actif sans naviguer
     setState(() {
       _currentTab = item;
     });
@@ -146,12 +140,13 @@ class _EventsListPageState extends State<EventsListPage> {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: CustomAppBar(
         title: appBarTitle,
         showBackButton: false,
         action: _currentTab == NavItem.home
             ? IconButton(
-                icon: const Icon(Icons.settings_outlined),
+                icon: const Icon(Icons.settings_outlined, color: AppColors.white),
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const SettingsPage()),
@@ -196,32 +191,76 @@ class _EventsListPageState extends State<EventsListPage> {
         if (isOffline)
           Container(
             width: double.infinity,
+            margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: AppColors.warning.withOpacity(0.1),
-            child: const Row(
+            decoration: BoxDecoration(
+              color: AppColors.warning.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.warning.withValues(alpha: 0.4),
+              ),
+            ),
+            child: Row(
               children: [
-                Icon(Icons.wifi_off, size: 16, color: AppColors.warning),
-                SizedBox(width: 8),
-                Text(
-                  'MODE HORS-LIGNE – SYNCHRONISATION EN ATTENTE',
-                  style: TextStyle(fontSize: 12, color: AppColors.warning),
+                const Icon(Icons.wifi_off_rounded, size: 18, color: AppColors.warning),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'MODE HORS-LIGNE – SYNCHRONISATION EN ATTENTE',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.warning,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Vos événements',
-                  style: TextStyle(fontSize: 14, color: AppColors.grey),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'ÉVÉNEMENTS ACTIFS',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.orange,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    if (eventProvider.events != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.greyLight.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${eventProvider.events!.length}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.grey,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 if (eventProvider.isLoading)
-                  const Center(child: CircularProgressIndicator()),
+                  const Expanded(
+                    child: Center(
+                      child: CircularProgressIndicator(color: AppColors.orange),
+                    ),
+                  ),
                 if (eventProvider.error != null)
                   Expanded(
                     child: Center(
@@ -229,35 +268,36 @@ class _EventsListPageState extends State<EventsListPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.error_outline,
+                            Icons.error_outline_rounded,
                             size: 64,
-                            color: AppColors.warning.withOpacity(0.3),
+                            color: AppColors.warning.withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 16),
-                          const Text(
+                          Text(
                             'Erreur lors du chargement des événements',
-                            style: TextStyle(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.grey,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.white,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
                             child: Text(
                               '${eventProvider.error}',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
                                 color: AppColors.grey,
                               ),
                             ),
                           ),
                           const SizedBox(height: 24),
-                          ElevatedButton(
+                          ElevatedButton.icon(
                             onPressed: _loadUserEvents,
-                            child: const Text('Réessayer'),
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: const Text('Réessayer'),
                           ),
                         ],
                       ),
@@ -266,39 +306,42 @@ class _EventsListPageState extends State<EventsListPage> {
                 if (!eventProvider.isLoading && eventProvider.error == null)
                   if (eventProvider.events == null ||
                       eventProvider.events!.isEmpty)
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.event_note_outlined,
-                            size: 64,
-                            color: AppColors.grey.withOpacity(0.3),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Aucun événement',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.grey,
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.event_available_rounded,
+                              size: 64,
+                              color: AppColors.grey.withValues(alpha: 0.4),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Créez un événement pour commencer',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.grey.withOpacity(0.7),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Aucun événement disponible',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.white,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            Text(
+                              'Vos événements créés s\'afficheront automatiquement ici',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                color: AppColors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   else
                     Expanded(
                       child: ListView.builder(
                         itemCount: eventProvider.events!.length,
+                        padding: const EdgeInsets.only(bottom: 24),
                         itemBuilder: (context, index) {
                           final event = eventProvider.events![index];
                           return EventCard(
@@ -332,3 +375,4 @@ class _EventsListPageState extends State<EventsListPage> {
     );
   }
 }
+

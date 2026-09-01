@@ -210,4 +210,78 @@ const addAdmin = async (req, res) => {
     }
 }
 
-module.exports = {addUser, addAdmin, getAllUsers, getOneUser, updateUser, deleteUser, suspendUser, unsuspendUser}
+// Mettre à jour le rôle d'un utilisateur (ex: passer admin)
+const updateUserRole = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { role } = req.body;
+        if (!role || !['user', 'admin'].includes(role)) {
+            return res.status(400).json({ message: 'Rôle invalide' });
+        }
+
+        const user = await userModel.findByIdAndUpdate(id, { role }, { returnDocument: 'after' });
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur introuvable' });
+        }
+
+        // Journal d'audit
+        try {
+            const AuditLog = require('../models/auditLog');
+            await AuditLog.create({
+                userId: req.userId,
+                type: 'Utilisateur',
+                action: 'Changement de Rôle',
+                description: `Promotion de ${user.first_name} ${user.last_name} au rôle ${role.toUpperCase()}`,
+                status: 'Validé',
+                statusDot: 'bg-blue-500'
+            });
+        } catch (_) {}
+
+        return res.status(200).json({ message: `Rôle mis à jour en ${role}`, user });
+    } catch (error) {
+        return res.status(500).json({ message: 'Erreur lors du changement de rôle', error: error.message });
+    }
+};
+
+// Mettre à jour le plan d'abonnement d'un utilisateur (ex: PREMIUM, VIP, STARTER)
+const updateUserPlan = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { plan } = req.body;
+        const validPlans = ['STARTER', 'PREMIUM', 'VIP'];
+        if (!plan || !validPlans.includes(plan.toUpperCase())) {
+            return res.status(400).json({ message: 'Plan invalide (STARTER, PREMIUM, VIP)' });
+        }
+
+        const formattedPlan = plan.toUpperCase();
+        const priceMap = { 'STARTER': '0 FCFA/mois', 'PREMIUM': '29 900 FCFA/mois', 'VIP': '49 000 FCFA/mois' };
+
+        const user = await userModel.findByIdAndUpdate(
+            id, 
+            { plan: formattedPlan, price: priceMap[formattedPlan] }, 
+            { returnDocument: 'after' }
+        );
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur introuvable' });
+        }
+
+        // Journal d'audit
+        try {
+            const AuditLog = require('../models/auditLog');
+            await AuditLog.create({
+                userId: req.userId,
+                type: 'Paiement',
+                action: 'Attribution de Plan',
+                description: `Forfait ${formattedPlan} attribué à ${user.first_name} ${user.last_name}`,
+                status: 'Réussi',
+                statusDot: 'bg-emerald-500'
+            });
+        } catch (_) {}
+
+        return res.status(200).json({ message: `Plan mis à jour vers ${formattedPlan}`, user });
+    } catch (error) {
+        return res.status(500).json({ message: 'Erreur lors du changement de plan', error: error.message });
+    }
+};
+
+module.exports = { addUser, addAdmin, getAllUsers, getOneUser, updateUser, deleteUser, suspendUser, unsuspendUser, updateUserRole, updateUserPlan };

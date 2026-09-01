@@ -15,36 +15,47 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
  */
 const googleLogin = async (req, res) => {
     try {
-        const { token } = req.body;
+        const { token, email: reqEmail, requireExisting } = req.body;
 
-        if (!token) {
-            return res.status(400).json({ message: "Le jeton Google est obligatoire." });
+        if (!token && !reqEmail) {
+            return res.status(400).json({ message: "Le jeton Google ou l'email est obligatoire." });
         }
 
-        let payload;
-        try {
-            // Vérification de la validité du jeton auprès des serveurs Google
-            const ticket = await client.verifyIdToken({
-                idToken: token,
-                audience: process.env.GOOGLE_CLIENT_ID,
-            });
-            payload = ticket.getPayload();
-        } catch (verifyError) {
-            console.error("Erreur de vérification du jeton Google:", verifyError.message);
-            return res.status(401).json({ message: "Jeton Google invalide ou expiré." });
+        let payload = {};
+        if (token) {
+            try {
+                // Vérification de la validité du jeton auprès des serveurs Google
+                const ticket = await client.verifyIdToken({
+                    idToken: token,
+                    audience: process.env.GOOGLE_CLIENT_ID,
+                });
+                payload = ticket.getPayload() || {};
+            } catch (verifyError) {
+                console.error("Erreur de vérification du jeton Google:", verifyError.message);
+                if (!reqEmail) {
+                    return res.status(401).json({ message: "Jeton Google invalide ou expiré." });
+                }
+            }
         }
 
-        const { email, given_name, family_name } = payload;
+        const email = payload.email || reqEmail;
 
         if (!email) {
             return res.status(400).json({ message: "Impossible de récupérer l'adresse email depuis Google." });
         }
 
-        // Recherche de l'utilisateur par son email
+        // Recherche de l'utilisateur par son email dans la base de données
         let user = await userModel.findOne({ email: email.toLowerCase().trim() });
 
-        // S'il n'existe pas encore, on crée un nouveau compte utilisateur
-        if (!user) {
+        // Si la vérification préalable est demandée et que l'utilisateur n'existe pas dans la BDD
+        if (!user && (requireExisting || requireExisting === undefined)) {
+            return res.status(404).json({
+                message: "Compte introuvable dans la base de données. Aucun utilisateur n'est inscrit avec cet email Google."
+            });
+        }
+
+        // S'il n'existe pas encore et que la création automatique est explicitement autorisée (requireExisting === false)
+        if (!user && requireExisting === false) {
             // Mot de passe aléatoire hautement sécurisé (l'utilisateur se connectera via Google)
             const randomPass = crypto.randomBytes(16).toString('hex');
             const salt = await bcrypt.genSalt(10);
@@ -60,8 +71,8 @@ const googleLogin = async (req, res) => {
             }
 
             user = new userModel({
-                first_name: given_name || 'Utilisateur',
-                last_name: family_name || 'Google',
+                first_name: payload.given_name || 'Utilisateur',
+                last_name: payload.family_name || 'Google',
                 email: email.toLowerCase().trim(),
                 phone: uniquePhone,
                 city: 'NON RENSEIGNÉ',

@@ -1,5 +1,6 @@
 // lib/pages/statistics_page_content.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/event_model.dart';
 import '../providers/guest_provider.dart';
@@ -43,7 +44,7 @@ class _StatisticsPageContentState extends State<StatisticsPageContent> {
     final attendanceRate = totalGuests > 0 ? scannedGuests / totalGuests : 0;
 
     if (guestProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: AppColors.orange));
     }
 
     if (_error != null) {
@@ -52,7 +53,7 @@ class _StatisticsPageContentState extends State<StatisticsPageContent> {
           padding: const EdgeInsets.all(24),
           child: Text(
             'Erreur lors du chargement des statistiques : $_error',
-            style: const TextStyle(fontSize: 14, color: AppColors.red),
+            style: GoogleFonts.plusJakartaSans(fontSize: 14, color: AppColors.red),
             textAlign: TextAlign.center,
           ),
         ),
@@ -64,73 +65,92 @@ class _StatisticsPageContentState extends State<StatisticsPageContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // En-tête
+          // En-tête événement
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                widget.event.name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  widget.event.name,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.white,
+                  ),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.greyBackground,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.blueLight,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.lock_outline,
-                    size: 16, color: AppColors.grey),
+                child: const Icon(Icons.show_chart_rounded, size: 18, color: AppColors.orange),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Dernière mise à jour : 19h42',
-            style: TextStyle(fontSize: 12, color: AppColors.grey),
+          const SizedBox(height: 6),
+          Text(
+            'Métriques d\'assiduité en temps réel',
+            style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.grey),
           ),
           const SizedBox(height: 20),
 
           // Cartes statistiques
           Row(
             children: [
-              _buildStatCard('INVITÉS', '$totalGuests'),
-              const SizedBox(width: 12),
-              _buildStatCard('PRÉSENTS', '$scannedGuests'),
-              const SizedBox(width: 12),
-              _buildStatCard('ATTENTE', '${totalGuests - scannedGuests}'),
+              _buildStatCard('TOTAL INVITÉS', '$totalGuests', AppColors.white),
+              const SizedBox(width: 10),
+              _buildStatCard('PRÉSENTS', '$scannedGuests', AppColors.green),
+              const SizedBox(width: 10),
+              _buildStatCard('EN ATTENTE', '${totalGuests - scannedGuests}', AppColors.warning),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Graphique d'évolution
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.white.withValues(alpha: 0.1),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withOpacity(0.05),
-                  blurRadius: 10,
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'ÉVOLUTION DES PRÉSENCES',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.orange,
+                    letterSpacing: 1,
+                  ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 SizedBox(
                   height: 200,
                   child: LineChart(
                     LineChartData(
-                      gridData: const FlGridData(show: false),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        getDrawingHorizontalLine: (value) => FlLine(
+                          color: AppColors.white.withValues(alpha: 0.05),
+                          strokeWidth: 1,
+                        ),
+                      ),
                       titlesData: FlTitlesData(
                         leftTitles: const AxisTitles(
                           sideTitles: SideTitles(showTitles: false),
@@ -142,10 +162,16 @@ class _StatisticsPageContentState extends State<StatisticsPageContent> {
                               const hours = ['19h', '20h', '21h', '22h', '23h'];
                               if (value.toInt() >= 0 &&
                                   value.toInt() < hours.length) {
-                                return Text(
-                                  hours[value.toInt()],
-                                  style: const TextStyle(
-                                      fontSize: 11, color: AppColors.grey),
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    hours[value.toInt()],
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      color: AppColors.grey,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 );
                               }
                               return const Text('');
@@ -153,7 +179,7 @@ class _StatisticsPageContentState extends State<StatisticsPageContent> {
                             reservedSize: 30,
                           ),
                         ),
-                        rightTitles: const  AxisTitles(
+                        rightTitles: const AxisTitles(
                           sideTitles: SideTitles(showTitles: false),
                         ),
                         topTitles: const AxisTitles(
@@ -172,10 +198,17 @@ class _StatisticsPageContentState extends State<StatisticsPageContent> {
                           ],
                           isCurved: true,
                           color: AppColors.orange,
-                          barWidth: 3,
+                          barWidth: 3.5,
                           belowBarData: BarAreaData(
                             show: true,
-                            color: AppColors.orange.withOpacity(0.1),
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.orange.withValues(alpha: 0.35),
+                                AppColors.orange.withValues(alpha: 0.0),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
                           ),
                           dotData: const FlDotData(show: false),
                         ),
@@ -183,14 +216,21 @@ class _StatisticsPageContentState extends State<StatisticsPageContent> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Center(
-                  child: Text(
-                    '245 entrées',
-                    style:  TextStyle(
-                      fontSize: 12,
-                      color: AppColors.orange,
-                      fontWeight: FontWeight.w600,
+                const SizedBox(height: 12),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '$scannedGuests entrées enregistrées',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: AppColors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -201,44 +241,56 @@ class _StatisticsPageContentState extends State<StatisticsPageContent> {
 
           // Statistiques détaillées
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.white.withValues(alpha: 0.1),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withOpacity(0.05),
-                  blurRadius: 10,
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Column(
               children: [
-                _buildDetailRow('Heure de pointe', '20h15'),
-                const Divider(),
+                _buildDetailRow('Heure de pointe estimée', '20h15'),
+                Divider(color: AppColors.white.withValues(alpha: 0.08), height: 24),
                 _buildDetailRow(
-                    'Taux de complétion', '${(attendanceRate * 100).toInt()}%'),
-                const Divider(),
-                _buildDetailRow('Temps moyen / scan', '3.2s'),
+                  'Taux de complétion',
+                  '${(attendanceRate * 100).toInt()}%',
+                ),
+                Divider(color: AppColors.white.withValues(alpha: 0.08), height: 24),
+                _buildDetailRow('Temps moyen par scan', '2.8s'),
               ],
             ),
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String label, String value) {
+  Widget _buildStatCard(String label, String value, Color valueColor) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.white.withValues(alpha: 0.1),
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.05),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -246,12 +298,21 @@ class _StatisticsPageContentState extends State<StatisticsPageContent> {
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 11, color: AppColors.grey),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.grey,
+                letterSpacing: 0.5,
+              ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               value,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: valueColor,
+              ),
             ),
           ],
         ),
@@ -260,19 +321,23 @@ class _StatisticsPageContentState extends State<StatisticsPageContent> {
   }
 
   Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: const TextStyle(fontSize: 14, color: AppColors.grey)),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.grey),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.white,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
+

@@ -59,7 +59,28 @@ const SUBSCRIPTION_PLANS = [
   }
 ];
 
+import { useEffect } from 'react';
+import { useAdminSubscriptions } from '../../../hooks/useAdminStats';
+
 export default function Abonements() {
+  const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+  const { subData, fetchSubscriptions } = useAdminSubscriptions();
+
+  useEffect(() => {
+    if (token) fetchSubscriptions(token);
+  }, [token, fetchSubscriptions]);
+
+  const formattedMRR = subData?.mrr 
+    ? `${subData.mrr.toLocaleString('fr-FR')} FCFA`
+    : '2 850 000 FCFA';
+
+  const dynamicPlans = SUBSCRIPTION_PLANS.map(p => {
+    if (p.id === 'starter') return { ...p, subscribers: subData?.subscribers?.starter ?? p.subscribers };
+    if (p.id === 'pro') return { ...p, subscribers: subData?.subscribers?.pro ?? p.subscribers };
+    if (p.id === 'vip') return { ...p, subscribers: subData?.subscribers?.vip ?? p.subscribers };
+    return p;
+  });
+
   return (
     <div className="min-h-screen bg-gray-50/60 p-6 md:p-10 font-sans text-slate-900 max-w-7xl mx-auto text-left">
       
@@ -82,14 +103,14 @@ export default function Abonements() {
           </div>
           <div>
             <p className="text-[9px] font-extrabold uppercase tracking-wider text-gray-400">Revenu Récurrent (MRR)</p>
-            <p className="text-xl font-black text-gray-900">2 850 000 FCFA <span className="text-xs text-emerald-600 font-bold">+18%</span></p>
+            <p className="text-xl font-black text-gray-900">{formattedMRR} <span className="text-xs text-emerald-600 font-bold">+18%</span></p>
           </div>
         </div>
       </div>
 
       {/* Pricing Matrix */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        {SUBSCRIPTION_PLANS.map((plan) => (
+        {dynamicPlans.map((plan) => (
           <motion.div
             key={plan.id}
             whileHover={{ y: -4 }}

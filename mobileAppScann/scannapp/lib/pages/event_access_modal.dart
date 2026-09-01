@@ -1,5 +1,6 @@
 // lib/pages/event_access_modal.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/event_model.dart';
 import '../providers/auth_provider.dart';
@@ -41,7 +42,6 @@ class _EventAccessModalState extends State<EventAccessModal> {
 
       if (response) {
         if (!mounted) return;
-        // Sélectionner l'événement et fermer le modal
         authProvider.selectEvent(widget.event);
         Navigator.pop(context);
       }
@@ -61,80 +61,136 @@ class _EventAccessModalState extends State<EventAccessModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border.all(
+          color: AppColors.white.withValues(alpha: 0.12),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.6),
+            blurRadius: 30,
+            offset: const Offset(0, -10),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: AppColors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'CONNEXION ÉVÉNEMENT',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                Text(
+                  'ACCÈS À L\'ÉVÉNEMENT',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.orange,
+                    letterSpacing: 1.5,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close_rounded, color: AppColors.grey),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
             Text(
               widget.event.name,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.white,
+              ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'CODE D\'ACCÈS ÉVÉNEMENT',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            Text(
+              'CODE D\'ACCÈS (8 CARACTÈRES)',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.grey,
+                letterSpacing: 1,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             TextField(
               controller: _codeController,
               maxLength: 8,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, letterSpacing: 8),
-              decoration: const InputDecoration(
-                hintText: 'GT25',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 10,
+                color: AppColors.white,
+              ),
+              decoration: InputDecoration(
+                hintText: 'GT25XXXX',
+                hintStyle: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  letterSpacing: 8,
+                  color: AppColors.grey.withValues(alpha: 0.4),
+                ),
                 counterText: '',
-                contentPadding: EdgeInsets.symmetric(vertical: 20),
+                contentPadding: const EdgeInsets.symmetric(vertical: 18),
               ),
               onChanged: (_) => setState(() => _errorMessage = ''),
               enabled: !_isLoading,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Format: 8 caractères alphanumériques',
-              style: TextStyle(fontSize: 12, color: AppColors.grey),
-            ),
             if (_errorMessage.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  _errorMessage,
-                  style: const TextStyle(fontSize: 12, color: AppColors.red),
+                padding: const EdgeInsets.only(top: 10),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline_rounded, size: 16, color: AppColors.red),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _errorMessage,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: AppColors.red,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
+              height: 52,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _validateAndConnect,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.orange,
                   foregroundColor: AppColors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shadowColor: AppColors.orangeGlow,
+                  elevation: 4,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 child: _isLoading
@@ -142,34 +198,47 @@ class _EventAccessModalState extends State<EventAccessModal> {
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
+                          strokeWidth: 2.5,
                           color: Colors.white,
                         ),
                       )
-                    : const Text('SE CONNECTER'),
+                    : Text(
+                        'VALIDER LE CODE',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.greyBackground,
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.blueLight.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppColors.blueAccent.withValues(alpha: 0.3),
+                ),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 20, color: AppColors.blue),
-                  SizedBox(width: 12),
+                  const Icon(Icons.info_outline_rounded, size: 20, color: AppColors.blueAccent),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'CODE NON REÇU ? Contactez l\'organisateur pour obtenir votre code d\'accès à l\'événement.',
-                      style: TextStyle(fontSize: 13, color: AppColors.blue),
+                      'Demandez le code d\'accès de l\'événement auprès de l\'organisateur principal.',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: AppColors.white.withValues(alpha: 0.9),
+                        height: 1.3,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -182,3 +251,4 @@ class _EventAccessModalState extends State<EventAccessModal> {
     super.dispose();
   }
 }
+

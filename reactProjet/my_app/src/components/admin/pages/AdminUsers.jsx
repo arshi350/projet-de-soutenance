@@ -90,17 +90,43 @@ const AdminUsers = () => {
     });
   }, [users, currentFilter, searchQuery]);
 
-  // --- ACTIONS DE MODÉRATION ---
-  const handlePromoteAdmin = (id) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, role: "Admin" } : u));
+  // --- ACTIONS DE MODÉRATION API REELLES ---
+  const handlePromoteAdmin = async (id) => {
+    try {
+      const { updateUserRoleApi } = await import('../../../services/userService');
+      await updateUserRoleApi(id, 'admin', token);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, role: "Admin" } : u));
+      if (refetch) refetch();
+    } catch (err) {
+      alert(err.message || 'Erreur lors de la promotion en admin');
+    }
   };
 
-  const handleGoPremium = (id) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, plan: "PREMIUM", price: "29 900 FCFA/mois" } : u));
+  const handleGoPremium = async (id) => {
+    try {
+      const { updateUserPlanApi } = await import('../../../services/userService');
+      await updateUserPlanApi(id, 'PREMIUM', token);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, plan: "PREMIUM", price: "29 900 FCFA/mois" } : u));
+      if (refetch) refetch();
+    } catch (err) {
+      alert(err.message || 'Erreur lors du changement de forfait');
+    }
   };
 
-  const handleSuspendUser = (id) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, status: "Suspendu" } : u));
+  const handleSuspendUser = async (id, currentStatus) => {
+    try {
+      const { suspendUser, unsuspendUser } = await import('../../../services/userService');
+      if (currentStatus === 'Suspendu') {
+        await unsuspendUser(id, token);
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, status: "Actif" } : u));
+      } else {
+        await suspendUser(id, token, 'Suspension par modérateur');
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, status: "Suspendu" } : u));
+      }
+      if (refetch) refetch();
+    } catch (err) {
+      alert(err.message || 'Erreur lors de la modification de suspension');
+    }
   };
 
   return (

@@ -188,6 +188,25 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  // ✅ Connexion Google avec vérification préalable en base de données
+  static Future<Map<String, dynamic>> googleLogin(String token, {String? email, bool requireExisting = true}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/google'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'token': token,
+        if (email != null && email.isNotEmpty) 'email': email,
+        'requireExisting': requireExisting,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    _checkResponse(response, fallback: 'Aucun compte associé à cette adresse Google n\'a été trouvé.');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   // ✅ Vérification accès événement
   static Future<Map<String, dynamic>> verifyEventAccess(
       String eventId, String code) async {

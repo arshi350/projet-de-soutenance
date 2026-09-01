@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../models/event_model.dart';
 import '../services/scan_service.dart';
@@ -66,6 +67,7 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
     try {
       final result = await ScanService.verifyQRCode(qrCode, widget.event.id);
 
+      if (!mounted) return;
       if (result.success && !result.alreadyScanned && result.guest != null) {
         setState(() {
           _lastScanResult = 'valid';
@@ -98,18 +100,21 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ScanFailurePage()),
       );
     } finally {
-      setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     }
   }
 
   String _getFormattedTime() {
     final now = DateTime.now();
-    return '${now.hour}:${now.minute.toString().padLeft(2, '0')}';
+    return '${now.hour}h${now.minute.toString().padLeft(2, '0')}';
   }
 
   Widget _buildControlButton({
@@ -123,10 +128,26 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isActive ? AppColors.orange : AppColors.greyBackground,
+              color: isActive
+                  ? AppColors.orange
+                  : AppColors.blueLight.withValues(alpha: 0.8),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: isActive
+                    ? AppColors.orangeLight
+                    : AppColors.white.withValues(alpha: 0.15),
+              ),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: AppColors.orange.withValues(alpha: 0.4),
+                        blurRadius: 12,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : [],
             ),
             child: Icon(
               icon,
@@ -137,10 +158,10 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
           const SizedBox(height: 8),
           Text(
             label,
-            style: TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 12,
               color: isActive ? AppColors.orange : AppColors.grey,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
             ),
           ),
         ],
@@ -162,15 +183,15 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
           errorBuilder: (context, error, child) {
             return Container(
               color: AppColors.cameraBackground,
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.no_photography, size: 50, color: Colors.white54),
-                    SizedBox(height: 16),
+                    const Icon(Icons.no_photography_rounded, size: 56, color: AppColors.grey),
+                    const SizedBox(height: 16),
                     Text(
                       'Erreur d\'accès à la caméra',
-                      style: TextStyle(color: Colors.white54),
+                      style: GoogleFonts.plusJakartaSans(color: AppColors.grey),
                     ),
                   ],
                 ),
@@ -178,47 +199,72 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
             );
           },
         ),
+        // Viseur QR haute technologie avec coins néon
         Center(
           child: Container(
-            width: 280,
-            height: 280,
+            width: 270,
+            height: 270,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.white, width: 2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'Placez le QR code dans le cadre',
-                  style: TextStyle(color: Colors.white, fontSize: 12),
-                ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: AppColors.orange.withValues(alpha: 0.8),
+                width: 2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.orange.withValues(alpha: 0.2),
+                  blurRadius: 25,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.blue.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: AppColors.white.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: Text(
+                      'Centrez le QR Code',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: AppColors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
+        // Panneau inférieur cinématique
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24)),
+              color: AppColors.cardBackground,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              border: Border.all(
+                color: AppColors.white.withValues(alpha: 0.1),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, -5),
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 25,
+                  offset: const Offset(0, -8),
                 ),
               ],
             ),
@@ -231,26 +277,31 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Progression des entrées',
-                          style: TextStyle(fontSize: 12, color: AppColors.grey),
+                        Text(
+                          'PROGRESSION DES ENTRÉES',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.orange,
+                            letterSpacing: 1,
+                          ),
                         ),
                         Text(
                           '${widget.event.scannedGuests} / ${widget.event.totalGuests} (${(attendanceRate * 100).toInt()}%)',
-                          style: const TextStyle(
+                          style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.black,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.white,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: LinearProgressIndicator(
                         value: attendanceRate,
-                        backgroundColor: AppColors.greyLight,
+                        backgroundColor: AppColors.greyLight.withValues(alpha: 0.3),
                         color: AppColors.orange,
                         minHeight: 8,
                       ),
@@ -262,57 +313,62 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildControlButton(
-                      icon: Icons.flash_on,
+                      icon: Icons.flash_on_rounded,
                       label: 'Flash',
                       isActive: _isFlashOn,
                       onTap: _toggleFlash,
                     ),
                     _buildControlButton(
-                      icon: Icons.volume_up,
+                      icon: Icons.volume_up_rounded,
                       label: 'Sons',
                       isActive: _isSoundOn,
                       onTap: _toggleSound,
                     ),
                     _buildControlButton(
-                      icon: Icons.refresh,
+                      icon: Icons.refresh_rounded,
                       label: 'Réinit.',
                       isActive: false,
                       onTap: _resetScanner,
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                if (_lastScanResult.isNotEmpty)
+                if (_lastScanResult.isNotEmpty) ...[
+                  const SizedBox(height: 20),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: _lastScanResult == 'valid'
-                          ? AppColors.green.withOpacity(0.1)
-                          : AppColors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                          ? AppColors.green.withValues(alpha: 0.15)
+                          : AppColors.red.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _lastScanResult == 'valid'
+                            ? AppColors.green.withValues(alpha: 0.4)
+                            : AppColors.red.withValues(alpha: 0.4),
+                      ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           _lastScanResult == 'valid'
-                              ? Icons.check_circle
-                              : Icons.error,
+                              ? Icons.check_circle_rounded
+                              : Icons.error_rounded,
                           color: _lastScanResult == 'valid'
                               ? AppColors.green
                               : AppColors.red,
-                          size: 20,
+                          size: 22,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'DERNIER SCAN : $_lastScanName',
-                                style: TextStyle(
+                                style: GoogleFonts.plusJakartaSans(
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.bold,
                                   color: _lastScanResult == 'valid'
                                       ? AppColors.green
                                       : AppColors.red,
@@ -321,7 +377,7 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
                               if (_lastScanResult == 'valid')
                                 Text(
                                   'Pass valide • $_lastScanTime',
-                                  style: const TextStyle(
+                                  style: GoogleFonts.plusJakartaSans(
                                     fontSize: 11,
                                     color: AppColors.grey,
                                   ),
@@ -332,6 +388,7 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
                       ],
                     ),
                   ),
+                ],
               ],
             ),
           ),
@@ -340,3 +397,4 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
     );
   }
 }
+

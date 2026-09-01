@@ -107,3 +107,28 @@ export const getAllEventsAdmin = async (token) => {
         throw error.response?.data || error;
     }
 };
+
+// Modérer le statut d'un événement par l'admin
+export const updateEventStatusAdminApi = async (eventId, status, token) => {
+    try {
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.put(`/event/admin/updateStatus/${eventId}`, { status }, config);
+        return response.data;
+    } catch (error) {
+        console.error("Erreur lors de la modification du statut d'événement:", error);
+        throw error.response?.data || error;
+    }
+};
+
+// Mettre en avant un événement par l'admin
+export const toggleFeaturedEventAdminApi = async (eventId, token) => {
+    try {
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await api.put(`/event/admin/toggleFeatured/${eventId}`, null, config);
+        return response.data;
+    } catch (error) {
+        console.error("Erreur lors de la mise en avant de l'événement:", error);
+        throw error.response?.data || error;
+    }
+};
+

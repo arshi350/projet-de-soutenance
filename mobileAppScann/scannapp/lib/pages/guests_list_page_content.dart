@@ -1,5 +1,6 @@
 // lib/pages/guests_list_page_content.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/guest_provider.dart';
 import '../models/guest_model.dart';
 import '../models/event_model.dart';
@@ -49,47 +50,56 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
 
     return Column(
       children: [
-        // En-tête événement
+        // En-tête événement & Statistiques principales
         Container(
-          padding: const EdgeInsets.all(16),
-          color: AppColors.white,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            border: Border(
+              bottom: BorderSide(
+                color: AppColors.white.withValues(alpha: 0.08),
+                width: 1,
+              ),
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 widget.event.name,
-                style: const TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: AppColors.white,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Row(
                 children: [
-                  _buildStatCard('TOTAL', '$totalGuests'),
-                  const SizedBox(width: 12),
-                  _buildStatCard('PRÉSENTS', '$scannedGuests'),
-                  const SizedBox(width: 12),
-                  _buildStatCard('TAUX', '${(attendanceRate * 100).toInt()}%'),
+                  _buildStatCard('TOTAL INVITÉS', '$totalGuests', AppColors.white),
+                  const SizedBox(width: 10),
+                  _buildStatCard('PRÉSENTS', '$scannedGuests', AppColors.green),
+                  const SizedBox(width: 10),
+                  _buildStatCard('TAUX DE SCAN', '${(attendanceRate * 100).toInt()}%', AppColors.orange),
                 ],
               ),
             ],
           ),
         ),
 
-        // Barre de recherche
+        // Barre de recherche stylisée
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: TextField(
+            style: GoogleFonts.plusJakartaSans(color: AppColors.white),
             decoration: InputDecoration(
-              hintText: 'Rechercher un invité...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: BorderSide.none,
+              hintText: 'Rechercher un invité par nom ou email...',
+              hintStyle: GoogleFonts.plusJakartaSans(
+                color: AppColors.grey,
+                fontSize: 14,
               ),
-              filled: true,
-              fillColor: AppColors.greyBackground,
+              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.orange),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             ),
             onChanged: (value) => setState(() => _searchQuery = value),
           ),
@@ -97,14 +107,24 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
 
         // Liste des invités
         if (guestProvider.isLoading)
-          const Expanded(child: Center(child: CircularProgressIndicator())),
+          const Expanded(
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.orange),
+            ),
+          ),
         if (guestProvider.error != null)
           Expanded(
-            child: Center(child: Text('Erreur: ${guestProvider.error}')),
+            child: Center(
+              child: Text(
+                'Erreur: ${guestProvider.error}',
+                style: GoogleFonts.plusJakartaSans(color: AppColors.red),
+              ),
+            ),
           ),
         if (!guestProvider.isLoading && guestProvider.guests != null)
           Expanded(
             child: ListView.builder(
+              padding: const EdgeInsets.only(top: 8, bottom: 24),
               itemCount: _filteredGuests.length,
               itemBuilder: (context, index) {
                 final guest = _filteredGuests[index];
@@ -116,24 +136,36 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
     );
   }
 
-  Widget _buildStatCard(String label, String value) {
+  Widget _buildStatCard(String label, String value, Color valueColor) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: AppColors.greyBackground,
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.blueLight.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.white.withValues(alpha: 0.08),
+          ),
         ),
         child: Column(
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 11, color: AppColors.grey),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.grey,
+                letterSpacing: 0.5,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: valueColor,
+              ),
             ),
           ],
         ),
@@ -141,3 +173,4 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
     );
   }
 }
+

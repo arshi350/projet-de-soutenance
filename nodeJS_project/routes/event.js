@@ -9,6 +9,8 @@ const {
     getRecentEventsByUser, 
     getRecentvents, 
     getAllEventsForAdmin,
+    updateEventStatusForAdmin,
+    toggleFeaturedEventForAdmin,
     calculateEventQuote,
     activateEvent,
     upgradeEventQuota
@@ -168,6 +170,8 @@ eventRouter.route("/connect").post(connectToEventByCode)
  *         description: Erreur serveur
  */
 eventRouter.route("/admin/getAllEvents").get(authenticateToken, getAllEventsForAdmin)
+eventRouter.route("/admin/updateStatus/:id").put(authenticateToken, updateEventStatusForAdmin)
+eventRouter.route("/admin/toggleFeatured/:id").put(authenticateToken, toggleFeaturedEventForAdmin)
 
 /**
  * @swagger

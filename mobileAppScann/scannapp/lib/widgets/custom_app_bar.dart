@@ -1,5 +1,6 @@
 // lib/widgets/custom_app_bar.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -21,15 +22,16 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       title: Text(
         title,
-        style: const TextStyle(
+        style: GoogleFonts.plusJakartaSans(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.black,
+          fontWeight: FontWeight.bold,
+          color: AppColors.white,
+          letterSpacing: 0.3,
         ),
       ),
       leading: showBackButton
           ? IconButton(
-              icon: const Icon(Icons.arrow_back_ios, size: 20),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.white),
               onPressed: () {
                 if (onBackPressed != null) {
                   onBackPressed!();
@@ -39,12 +41,20 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               },
             )
           : null,
-      actions: action != null ? [action!] : [],
-      backgroundColor: AppColors.white,
+      actions: action != null ? [action!, const SizedBox(width: 8)] : null,
+      backgroundColor: AppColors.blue,
       elevation: 0,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(
+          color: AppColors.white.withValues(alpha: 0.08),
+          height: 1,
+        ),
+      ),
     );
   }
 
   @override
   Size get preferredSize => const Size.fromHeight(56);
 }
+

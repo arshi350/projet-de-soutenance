@@ -77,6 +77,7 @@ class _ScanPageState extends State<ScanPage> {
     try {
       final result = await ScanService.verifyQRCode(qrCode, widget.event.id);
 
+      if (!mounted) return;
       if (result.success && !result.alreadyScanned && result.guest != null) {
         // Scan réussi (Privé ou Public)
         setState(() {
@@ -126,6 +127,7 @@ class _ScanPageState extends State<ScanPage> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -133,7 +135,9 @@ class _ScanPageState extends State<ScanPage> {
         ),
       );
     } finally {
-      setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     }
   }
 
@@ -251,7 +255,7 @@ class _ScanPageState extends State<ScanPage> {
                     const BorderRadius.vertical(top: Radius.circular(24)),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.1),
+                    color: AppColors.black.withValues(alpha: 0.1),
                     blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
@@ -332,8 +336,8 @@ class _ScanPageState extends State<ScanPage> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: _lastScanResult == 'valid'
-                            ? AppColors.green.withOpacity(0.1)
-                            : AppColors.red.withOpacity(0.1),
+                            ? AppColors.green.withValues(alpha: 0.1)
+                            : AppColors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(

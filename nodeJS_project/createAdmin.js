@@ -52,23 +52,31 @@ async function createAdmin(data) {
     throw new Error('Veuillez fournir first_name, last_name, email, phone, city et password');
   }
 
-  const existingEmail = await userModel.findOne({ email });
-  if (existingEmail) {
-    throw new Error('Un utilisateur avec cet email existe déjà');
-  }
-
-  const existingPhone = await userModel.findOne({ phone: Number(phone) });
-  if (existingPhone) {
-    throw new Error('Un utilisateur avec ce numéro de téléphone existe déjà');
-  }
-
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
+
+  let existingUser = await userModel.findOne({
+    $or: [{ email: email.toLowerCase().trim() }, { phone: Number(phone) }]
+  });
+
+  if (existingUser) {
+    existingUser.first_name = first_name;
+    existingUser.last_name = last_name;
+    existingUser.email = email.toLowerCase().trim();
+    existingUser.phone = Number(phone);
+    existingUser.city = city;
+    existingUser.password = hashedPassword;
+    existingUser.role = 'admin';
+    existingUser.suspended = false;
+
+    console.log('Utilisateur existant mis à jour et promu au rôle Administrateur.');
+    return existingUser.save();
+  }
 
   const adminUser = new userModel({
     first_name,
     last_name,
-    email,
+    email: email.toLowerCase().trim(),
     phone: Number(phone),
     city,
     password: hashedPassword,

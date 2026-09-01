@@ -452,6 +452,54 @@ const getAllEventsForAdmin = async (req, res) => {
     }
 };
 
+// Mettre à jour le statut d'un événement par l'admin (Publié, En attente, Signalé, Terminés, En cours)
+const updateEventStatusForAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const event = await eventModel.findByIdAndUpdate(id, { status }, { returnDocument: 'after' });
+        if (!event) {
+            return res.status(404).json({ message: 'Événement non trouvé' });
+        }
+
+        // Journal d'audit
+        try {
+            const AuditLog = require('../../models/auditLog');
+            await AuditLog.create({
+                userId: req.userId,
+                type: 'Événement',
+                action: 'Modération Événement',
+                description: `Statut de l'événement "${event.titre}" mis à jour en "${status}"`,
+                status: 'Validé',
+                statusDot: 'bg-orange-500'
+            });
+        } catch (_) {}
+
+        return res.status(200).json({ message: 'Statut événement mis à jour avec succès', event });
+    } catch (error) {
+        return res.status(500).json({ message: 'Erreur lors de la mise à jour du statut', error: error.message });
+    }
+};
+
+// Mettre en avant / désactiver la mise en avant d'un événement
+const toggleFeaturedEventForAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const event = await eventModel.findById(id);
+        if (!event) {
+            return res.status(404).json({ message: 'Événement non trouvé' });
+        }
+
+        event.featured = !event.featured;
+        await event.save();
+
+        return res.status(200).json({ message: 'Mise en avant mise à jour', featured: event.featured, event });
+    } catch (error) {
+        return res.status(500).json({ message: 'Erreur lors de la mise en avant', error: error.message });
+    }
+};
+
 module.exports = { 
     AddEvent, 
     getAllEventByUser, 
@@ -461,6 +509,8 @@ module.exports = {
     getRecentEventsByUser, 
     getRecentvents, 
     getAllEventsForAdmin,
+    updateEventStatusForAdmin,
+    toggleFeaturedEventForAdmin,
     calculateEventQuote,
     activateEvent,
     upgradeEventQuota

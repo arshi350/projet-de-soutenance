@@ -165,7 +165,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.05),
+                    color: AppColors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],
@@ -182,9 +182,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                     height: 200,
                     child: LineChart(
                       LineChartData(
-                        gridData: FlGridData(show: false),
+                        gridData: const FlGridData(show: false),
                         titlesData: FlTitlesData(
-                          leftTitles: AxisTitles(
+                          leftTitles: const AxisTitles(
                             sideTitles: SideTitles(showTitles: false),
                           ),
                           bottomTitles: AxisTitles(
@@ -211,10 +211,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
                               reservedSize: 30,
                             ),
                           ),
-                          rightTitles: AxisTitles(
+                          rightTitles: const AxisTitles(
                             sideTitles: SideTitles(showTitles: false),
                           ),
-                          topTitles: AxisTitles(
+                          topTitles: const AxisTitles(
                             sideTitles: SideTitles(showTitles: false),
                           ),
                         ),
@@ -233,9 +233,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
                             barWidth: 3,
                             belowBarData: BarAreaData(
                               show: true,
-                              color: AppColors.orange.withOpacity(0.1),
+                              color: AppColors.orange.withValues(alpha: 0.1),
                             ),
-                            dotData: FlDotData(show: false),
+                            dotData: const FlDotData(show: false),
                           ),
                         ],
                       ),
@@ -245,7 +245,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   Center(
                     child: Text(
                       '$scannedGuests entrées',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.orange,
                         fontWeight: FontWeight.w600,
@@ -263,7 +263,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.black.withOpacity(0.05),
+                    color: AppColors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],
@@ -281,10 +281,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
             ),
             if (_userStats != null && _userStats!.isNotEmpty) ...[
               const SizedBox(height: 24),
-              Text(
+              const Text(
                 'Statistiques globales',
                 style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               _buildDetailRow(
@@ -317,7 +317,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppColors.black.withOpacity(0.05),
+              color: AppColors.black.withValues(alpha: 0.05),
               blurRadius: 10,
             ),
           ],

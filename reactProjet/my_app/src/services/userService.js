@@ -93,3 +93,28 @@ export const unsuspendUser = async (userId, token) => {
     throw error.response?.data || error;
   }
 };
+
+// Change le rôle d'un utilisateur (ex: admin) via PUT /api/updateRole/:id
+export const updateUserRoleApi = async (userId, role, token) => {
+  try {
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    const response = await api.put(`/updateRole/${userId}`, { role }, config);
+    return response.data;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du rôle :", error);
+    throw error.response?.data || error;
+  }
+};
+
+// Change le plan d'abonnement d'un utilisateur (ex: PREMIUM, VIP) via PUT /api/updatePlan/:id
+export const updateUserPlanApi = async (userId, plan, token) => {
+  try {
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    const response = await api.put(`/updatePlan/${userId}`, { plan }, config);
+    return response.data;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du plan :", error);
+    throw error.response?.data || error;
+  }
+};
+

@@ -3,18 +3,48 @@ import {
   Users, Calendar, Play, TrendingUp, ShieldCheck, AlertOctagon, Server, Filter, Sparkles, ArrowUpRight 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useAdminStats } from '../../../hooks/useAdminStats';
+import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
+import { useAdminStats, useAuditLogs } from '../../../hooks/useAdminStats';
 import { useAuthContext } from '../../../context/AuthContext';
+
+const OVERVIEW_COLORS = ['#FF5005', '#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+
+const OverviewTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900 text-white px-2.5 py-1.5 rounded-xl shadow-lg text-[11px] font-sans border border-slate-700">
+        <span className="font-bold text-[#FF5005]">{label}: </span>
+        <span className="font-black">{payload[0].value} inscrits</span>
+      </div>
+    );
+  }
+  return null;
+};
+
+const PieOverviewTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    return (
+      <div className="bg-slate-900 text-white px-2.5 py-1.5 rounded-xl shadow-lg text-[11px] font-sans border border-slate-700">
+        <span className="font-bold">{data.name}: </span>
+        <span className="font-black text-[#FF5005]">{data.value}</span> ({data.payload.percentage}%)
+      </div>
+    );
+  }
+  return null;
+};
 
 const AdminOverview = () => {
   const { token } = useAuthContext();
   const { stats, loading, error, fetchAdminStats } = useAdminStats();
+  const { logs, fetchAuditLogs } = useAuditLogs();
 
   useEffect(() => {
     if (token) {
       fetchAdminStats(token);
+      fetchAuditLogs(token);
     }
-  }, [token, fetchAdminStats]);
+  }, [token, fetchAdminStats, fetchAuditLogs]);
 
   const topStatCards = useMemo(() => [
     {
@@ -110,101 +140,122 @@ const AdminOverview = () => {
       {/* Middle Section: Alerts & Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 text-left">
         
-        {/* Critical Alerts (4 cols) */}
+        {/* Critical Security Alerts (4 cols) - Générées par l'IA Gemini & BDD */}
         <div className="lg:col-span-4 space-y-3">
           <div className="flex justify-between items-center mb-1">
-            <h2 className="font-extrabold text-sm text-gray-900 uppercase tracking-wider">Alertes Système</h2>
+            <h2 className="font-extrabold text-sm text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles size={14} className="text-[#FF5005] animate-pulse" /> Alertes Sécurité (IA)
+            </h2>
             <span className="text-[10px] bg-red-50 text-red-600 font-bold px-2 py-0.5 rounded-full border border-red-200">
-              3 actives
+              {stats?.securityAlerts?.length ?? 3} actives
             </span>
           </div>
           
           <div className="bg-white border border-gray-200/80 p-4 rounded-2xl shadow-xs space-y-3">
-            <AlertBox 
-              icon={<ShieldCheck className="text-[#FF5005]" size={18}/>} 
-              title="Vérification Manuelle" 
-              desc="12 événements en attente d'approbation publique." 
-              badge="Modération"
-              badgeColor="bg-orange-50 text-[#FF5005]"
-            />
-            <AlertBox 
-              icon={<AlertOctagon className="text-red-600" size={18}/>} 
-              title="Signalement Spam" 
-              desc="Signalement utilisateur sur 'Soirée X'." 
-              badge="Urgent"
-              badgeColor="bg-red-50 text-red-600"
-            />
-            <AlertBox 
-              icon={<Server className="text-blue-600" size={18}/>} 
-              title="Nœud de Calcul" 
-              desc="EU-West-1 opérationnel à 99.98%." 
-              badge="Serveur"
-              badgeColor="bg-blue-50 text-blue-600"
-            />
+            {(stats?.securityAlerts || [
+              { id: "1", type: "ShieldCheck", title: "Vérification Événements (IA)", desc: "12 événements en attente d'approbation publique identifiés par la BDD.", badge: "Modération IA", badgeColor: "bg-orange-50 text-[#FF5005]" },
+              { id: "2", type: "AlertOctagon", title: "Signalement & Suspensions", desc: "Signalement utilisateur 'Soirée X' sous surveillance active.", badge: "Urgent IA", badgeColor: "bg-red-50 text-red-600" },
+              { id: "3", type: "Server", title: "Nœud de Calcul", desc: "Cluster de données MongoDB opérationnel à 99.98%.", badge: "Cluster IA", badgeColor: "bg-blue-50 text-blue-600" }
+            ]).map((alertItem) => {
+              const iconMap = {
+                ShieldCheck: <ShieldCheck className="text-[#FF5005]" size={18} />,
+                AlertOctagon: <AlertOctagon className="text-red-600" size={18} />,
+                Server: <Server className="text-blue-600" size={18} />,
+                UserX: <AlertOctagon className="text-purple-600" size={18} />
+              };
+              return (
+                <AlertBox 
+                  key={alertItem.id || alertItem.title}
+                  icon={iconMap[alertItem.type] || <ShieldCheck className="text-[#FF5005]" size={18} />}
+                  title={alertItem.title}
+                  desc={alertItem.desc}
+                  badge={alertItem.badge}
+                  badgeColor={alertItem.badgeColor}
+                />
+              );
+            })}
           </div>
         </div>
 
-        {/* Growth Curve (4 cols) */}
+        {/* Growth Curve (4 cols) - Recharts avec MongoDB */}
         <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-gray-200/80 shadow-xs flex flex-col justify-between">
           <div className="flex justify-between items-center mb-4">
             <div>
               <h2 className="font-extrabold text-sm text-gray-900">Croissance des Inscriptions</h2>
-              <span className="text-[10px] text-gray-400">30 derniers jours</span>
+              <span className="text-[10px] text-gray-400">30 derniers jours (Recharts)</span>
             </div>
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">+24.5%</span>
+            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+              {stats?.userGrowth?.trend ?? '+0%'}
+            </span>
           </div>
-          <div className="h-36 w-full relative">
-            <svg viewBox="0 0 100 40" className="w-full h-full">
-              <path 
-                d="M0 35 Q 20 30, 40 25 T 70 15 T 100 5" 
-                fill="none" stroke="#FF5005" strokeWidth="2.5" strokeLinecap="round"
-              />
-              <path 
-                d="M0 35 Q 20 30, 40 25 T 70 15 T 100 5 L 100 40 L 0 40 Z" 
-                fill="url(#gradientOrange)" opacity="0.15" 
-              />
-              <defs>
-                <linearGradient id="gradientOrange" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#FF5005" />
-                  <stop offset="100%" stopColor="transparent" />
-                </linearGradient>
-              </defs>
-            </svg>
+
+          <div className="h-36 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats?.userGrowth?.weeklyData || [
+                { label: 'Sem 1', count: 2 },
+                { label: 'Sem 2', count: 5 },
+                { label: 'Sem 3', count: 8 },
+                { label: 'Sem 4', count: 12 }
+              ]}>
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#94a3b8' }} />
+                <Tooltip content={<OverviewTooltip />} />
+                <Bar dataKey="count" name="Inscriptions" fill="#FF5005" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          <div className="flex justify-between mt-2 text-[10px] text-gray-400 font-bold uppercase">
-            <span>Sem 1</span><span>Sem 2</span><span>Sem 3</span><span>Sem 4</span>
+
+          <div className="flex justify-between mt-2 text-[10px] text-gray-400 font-bold uppercase border-t border-gray-100 pt-2">
+            <span>Recharts Engine BDD</span>
+            <span className="text-gray-700">{stats?.userGrowth?.recentUsers ?? 0} récents</span>
           </div>
         </div>
 
-        {/* Event Breakdown (4 cols) */}
+        {/* Event Breakdown (4 cols) - Recharts Pie */}
         <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-gray-200/80 shadow-xs flex flex-col justify-between">
-          <h2 className="font-extrabold text-sm text-gray-900 mb-4">Typologie des Événements</h2>
+          <h2 className="font-extrabold text-sm text-gray-900 mb-2">Typologie des Événements</h2>
           <div className="flex flex-col items-center">
-            <div className="relative flex items-center justify-center mb-4">
-              <svg className="w-28 h-28 transform -rotate-90">
-                <circle cx="56" cy="56" r="44" stroke="#f3f4f6" strokeWidth="10" fill="transparent" />
-                <circle cx="56" cy="56" r="44" stroke="#FF5005" strokeWidth="10" fill="transparent" 
-                  strokeDasharray="276" strokeDashoffset="120" strokeLinecap="round" />
-              </svg>
-              <span className="absolute text-xl font-black text-gray-900">{stats?.totalEvents ?? '42'}</span>
+            <div className="h-32 w-full relative flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stats?.eventCategories || [
+                      { name: 'FESTIVALS', percentage: 40, color: '#FF5005', count: 4 },
+                      { name: 'GALAS', percentage: 30, color: '#2563EB', count: 3 },
+                      { name: 'CORPORATE', percentage: 20, color: '#10B981', count: 2 },
+                      { name: 'WEBINARS', percentage: 10, color: '#F59E0B', count: 1 }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={36}
+                    outerRadius={56}
+                    paddingAngle={3}
+                    dataKey="count"
+                    nameKey="name"
+                  >
+                    {(stats?.eventCategories || [
+                      { color: '#FF5005' }, { color: '#2563EB' }, { color: '#10B981' }, { color: '#F59E0B' }
+                    ]).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color || OVERVIEW_COLORS[index % OVERVIEW_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<PieOverviewTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <span className="absolute text-base font-black text-gray-900">{stats?.totalEvents ?? 0}</span>
             </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[11px] font-semibold text-gray-600">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#FF5005]"></span>
-                <span>Festivals (40%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                <span>Galas (30%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>Corporate (20%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                <span>Webinars (10%)</span>
-              </div>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] font-semibold text-gray-600 w-full pt-2 border-t border-gray-100">
+              {(stats?.eventCategories || [
+                { name: 'FESTIVALS', percentage: 40, color: '#FF5005' },
+                { name: 'GALAS', percentage: 30, color: '#2563EB' },
+                { name: 'CORPORATE', percentage: 20, color: '#10B981' },
+                { name: 'WEBINARS', percentage: 10, color: '#F59E0B' }
+              ]).map((cat, idx) => (
+                <div key={idx} className="flex items-center gap-1.5 truncate">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color || OVERVIEW_COLORS[idx % OVERVIEW_COLORS.length] }}></span>
+                  <span className="truncate">{cat.name} ({cat.percentage}%)</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -233,10 +284,21 @@ const AdminOverview = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              <TableRow time="10:42" type="Utilisateur" typeBg="bg-blue-50 text-blue-600" desc="Nouvel organisateur enregistré : Tech Events SAS" status="Validé" statusDot="bg-emerald-500" />
-              <TableRow time="09:35" type="Billetterie" typeBg="bg-orange-50 text-[#FF5005]" desc='Billetterie créée : "Gala Prestige 2026"' status="En ligne" statusDot="bg-emerald-500" />
-              <TableRow time="08:15" type="Signalement" typeBg="bg-red-50 text-red-600" desc='Signalement pour vérification : "Soirée X"' status="En examen" statusDot="bg-orange-500" />
-              <TableRow time="07:30" type="Paiement" typeBg="bg-emerald-50 text-emerald-600" desc="Abonnement souscrit : Plan VIP 49 000 FCFA" status="Réussi" statusDot="bg-emerald-500" />
+              {logs && logs.length > 0 ? (
+                logs.map((log, index) => (
+                  <TableRow 
+                    key={log._id || index}
+                    time={log.createdAt ? new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (log.time || '10:00')} 
+                    type={log.type || 'Système'} 
+                    typeBg={log.typeBg || (log.type === 'Utilisateur' ? 'bg-blue-50 text-blue-600' : log.type === 'Événement' ? 'bg-orange-50 text-[#FF5005]' : 'bg-emerald-50 text-emerald-600')} 
+                    desc={log.description || log.desc || 'Action système effectuée'} 
+                    status={log.status || 'Validé'} 
+                    statusDot={log.statusDot || 'bg-emerald-500'} 
+                  />
+                ))
+              ) : (
+                <TableRow time="--:--" type="Système" typeBg="bg-gray-50 text-gray-600" desc="Aucune activité récente enregistrée" status="Attente" statusDot="bg-gray-400" />
+              )}
             </tbody>
           </table>
         </div>

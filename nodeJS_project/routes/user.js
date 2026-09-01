@@ -1,6 +1,6 @@
 
 const express = require('express');
-const { addUser, addAdmin, getAllUsers, getOneUser, updateUser, deleteUser, suspendUser, unsuspendUser } = require('../controller/user');
+const { addUser, addAdmin, getAllUsers, getOneUser, updateUser, deleteUser, suspendUser, unsuspendUser, updateUserRole, updateUserPlan } = require('../controller/user');
 const { optionalRefreshAccessToken } = require('../controller/auth/auth');
 const authenticateToken = require('../middleware/authmiddlewre');
 const userRouter = express.Router();
@@ -205,5 +205,7 @@ userRouter.route("/suspendUser/:id").put(authenticateToken, optionalRefreshAcces
  *         description: Utilisateur non trouvé
  */
 userRouter.route("/unsuspendUser/:id").put(authenticateToken, optionalRefreshAccessToken, unsuspendUser);
+userRouter.route("/updateRole/:id").put(authenticateToken, optionalRefreshAccessToken, updateUserRole);
+userRouter.route("/updatePlan/:id").put(authenticateToken, optionalRefreshAccessToken, updateUserPlan);
 
 module.exports = userRouter;

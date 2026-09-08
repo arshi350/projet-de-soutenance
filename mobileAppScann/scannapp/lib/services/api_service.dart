@@ -1,7 +1,7 @@
 // lib/services/api_service.dart (extrait des méthodes problématiques)
 import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:http/http.dart' as http;
 import '../models/event_model.dart';
 import '../models/guest_model.dart';
@@ -16,12 +16,12 @@ class ApiService {
       return 'http://$envHost/api';
     }
 
-    if (kIsWeb) return 'http://localhost:8000/api';
-    if (Platform.isAndroid) return 'http://10.0.2.2:8000/api';
-    if (Platform.isIOS) return 'http://localhost:8000/api';
+    if (kIsWeb) return 'http://localhost:3000/api';
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000/api';
+    if (Platform.isIOS) return 'http://localhost:3000/api';
 
     // Fallback to localhost for other platforms (desktop/emulator)
-    return 'http://localhost:8000/api';
+    return 'http://localhost:3000/api';
   }
 
   static String? _authToken;
@@ -249,6 +249,60 @@ class ApiService {
   // ✅ Statistiques événement
   static Future<Map<String, dynamic>> getEventStats(String eventId) async {
     return getScanStats(eventId);
+  }
+
+  // ✅ Récupération de l'événement assigné à l'agent connecté
+  static Future<EventModel?> getMyAgentEvent() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/agent/my-event'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        if (data['event'] != null) {
+          return EventModel.fromJson(data['event'] as Map<String, dynamic>);
+        }
+      }
+    } catch (e) {
+      debugPrint('Erreur getMyAgentEvent: $e');
+    }
+    return null;
+  }
+
+  // ✅ Récupération d'un événement unique par son ID
+  static Future<EventModel?> getEventById(String eventId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/event/$eventId'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final dynamic body = _safeDecode(response.body);
+      if (body is Map<String, dynamic>) {
+        final eventJson = body['event'] ?? body;
+        return EventModel.fromJson(eventJson as Map<String, dynamic>);
+      }
+    }
+    return null;
+  }
+
+  // ✅ Modification de mot de passe Agent
+  static Future<Map<String, dynamic>> changeAgentPassword(
+      String oldPassword, String newPassword) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/agent/change-password'),
+      headers: _headers,
+      body: jsonEncode({
+        'oldPassword': oldPassword,
+        'newPassword': newPassword,
+      }),
+    );
+
+    _checkResponse(response,
+        fallback: 'Erreur lors de la modification du mot de passe');
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 }
 

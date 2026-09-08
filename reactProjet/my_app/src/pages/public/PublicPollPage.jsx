@@ -167,11 +167,20 @@ export default function PublicPollPage() {
       <div className="max-w-xl mx-auto w-full space-y-6">
         {/* Header ArshiEvent Branding */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-1.5 text-base font-black tracking-tight text-gray-900">
+          <div className="inline-flex items-center gap-1.5 text-base font-black tracking-tight text-gray-900 flex-wrap justify-center">
             <span>ARSHI</span>
             <span className="text-[#FF5005]">EVENT</span>
             <span className="text-gray-300 mx-1">•</span>
             <span className="text-xs font-bold text-gray-500 uppercase">Sondage en Direct</span>
+            <span
+              className={`ml-2 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                poll.eventType === 'public'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200'
+                  : 'bg-purple-50 text-purple-600 border border-purple-200'
+              }`}
+            >
+              {poll.eventType === 'public' ? 'Événement Public' : 'Événement Privé'}
+            </span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">

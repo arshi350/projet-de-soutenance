@@ -24,7 +24,7 @@ const postEventAnalysisSchema = new mongoose.Schema(
   {
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Event',
+      ref: 'evenement',
       required: true,
       unique: true,
       index: true,
@@ -73,7 +73,7 @@ const postEventAnalysisSchema = new mongoose.Schema(
   }
 );
 
-const PostEventAnalysis = mongoose.model('PostEventAnalysis', postEventAnalysisSchema);
+const PostEventAnalysis = mongoose.model('analysePostEvenement', postEventAnalysisSchema);
 
 module.exports = {
   PostEventAnalysis,

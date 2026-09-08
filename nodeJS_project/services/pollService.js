@@ -2,12 +2,26 @@ const { Poll } = require('../models/poll/poll');
 const { PollVote } = require('../models/poll/pollVote');
 const crypto = require('crypto');
 
+const { eventModel } = require('../models/eventModels/event');
+
 /**
  * Créer un nouveau sondage
  */
-async function createPoll({ eventId, creatorId, title, description, timingType, isAnonymous, showLiveResults, autoCloseAt, questions }) {
+async function createPoll({ eventId, creatorId, eventType, title, description, timingType, isAnonymous, showLiveResults, autoCloseAt, questions }) {
   if (!questions || !Array.isArray(questions) || questions.length === 0) {
     throw new Error('Un sondage doit contenir au moins une question');
+  }
+
+  // Déterminer le eventType depuis l'événement si non fourni
+  let resolvedEventType = eventType;
+  if (!resolvedEventType && eventId) {
+    const event = await eventModel.findById(eventId);
+    if (event && event.eventType) {
+      resolvedEventType = event.eventType;
+    }
+  }
+  if (!resolvedEventType) {
+    resolvedEventType = 'private';
   }
 
   // Générer des IDs uniques pour les questions et leurs options si non fournis
@@ -25,6 +39,7 @@ async function createPoll({ eventId, creatorId, title, description, timingType, 
   const poll = new Poll({
     eventId,
     creatorId,
+    eventType: resolvedEventType,
     title,
     description: description || '',
     timingType: timingType || 'live',
@@ -41,8 +56,12 @@ async function createPoll({ eventId, creatorId, title, description, timingType, 
 /**
  * Récupérer les sondages d'un événement
  */
-async function getPollsByEvent(eventId) {
-  return await Poll.find({ eventId }).sort({ createdAt: -1 });
+async function getPollsByEvent(eventId, eventType) {
+  const query = { eventId };
+  if (eventType) {
+    query.eventType = eventType;
+  }
+  return await Poll.find(query).sort({ createdAt: -1 });
 }
 
 /**

@@ -51,7 +51,7 @@ const inviteSchema = new mongoose.Schema({
     },
     idEvent: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'event',
+        ref: 'evenement',
         required: true,
         index: true
     },
@@ -79,7 +79,7 @@ inviteSchema.pre('validate', function() {
     }
 });
 
-const Invites = mongoose.model('Invites', inviteSchema);
+const Invites = mongoose.model('invites', inviteSchema);
 
 // Fonction auto-exécutée pour nettoyer les anciens index non-sparse conflictuels dans MongoDB
 async function ensureSparseIndexes() {

@@ -131,7 +131,7 @@ const getAdminSubscriptionsStats = async (req, res) => {
 const getAuditLogs = async (req, res) => {
   try {
     let logs = await AuditLog.find().sort({ createdAt: -1 }).limit(20).populate('userId', 'first_name last_name email');
-    
+
     // Si aucun journal n'est encore enregistré, générer un flux d'audit par défaut à partir des données système
     if (!logs || logs.length === 0) {
       logs = [

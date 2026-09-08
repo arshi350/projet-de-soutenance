@@ -59,7 +59,7 @@ export default function EventHeader({
       </div>
 
       {/* Barre de Navigation (Onglets avec indicateur glissant) */}
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-2">
         <nav className="flex gap-2 overflow-x-auto no-scrollbar py-2">
           {tabs.map((tab) => {
             const isActive = activeTabId === tab.id;

@@ -50,7 +50,7 @@ const eventSchema = new mongoose.Schema({
     },
     userId:{
         type: mongoose.Schema.Types.ObjectId,
-        ref:"user",
+        ref:"utilisateur",
         required:true
     },
     date:{
@@ -113,5 +113,5 @@ const eventSchema = new mongoose.Schema({
     }
 })
 
-const eventModel = mongoose.model("event", eventSchema)
+const eventModel = mongoose.model("evenement", eventSchema)
 module.exports = {eventModel}

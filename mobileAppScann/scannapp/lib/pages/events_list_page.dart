@@ -31,7 +31,11 @@ class _EventsListPageState extends State<EventsListPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserEvents();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadUserEvents();
+      }
+    });
   }
 
   Future<void> _loadUserEvents() async {
@@ -40,6 +44,19 @@ class _EventsListPageState extends State<EventsListPage> {
 
     final userId = authProvider.userId;
     final token = authProvider.token;
+
+    if (token != null) {
+      ApiService.setAuthToken(token);
+    }
+
+    if (authProvider.isAgent) {
+      try {
+        await authProvider.fetchMyAgentEvent();
+      } catch (e) {
+        debugPrint('Erreur chargement événement agent: $e');
+      }
+      return;
+    }
 
     if (userId == null) {
       await authProvider.initializeAuth();
@@ -90,13 +107,19 @@ class _EventsListPageState extends State<EventsListPage> {
     }
   }
 
-  void _onEventSelected(EventModel event) {
-    showModalBottomSheet(
+  void _onEventSelected(EventModel event) async {
+    final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => EventAccessModal(event: event),
     );
+
+    if (result == true) {
+      setState(() {
+        _currentTab = NavItem.scanner;
+      });
+    }
   }
 
   void _onTabSelected(NavItem item) {
@@ -109,16 +132,24 @@ class _EventsListPageState extends State<EventsListPage> {
       return;
     }
 
-    if (!authProvider.hasEventSelected) {
+    if (!authProvider.isEventConnected) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: AppColors.red,
+          duration: const Duration(seconds: 4),
           content: Text(
-            item == NavItem.scanner
-                ? 'Sélectionnez un événement pour scanner'
-                : item == NavItem.guests
-                    ? 'Sélectionnez un événement pour voir les invités'
-                    : 'Sélectionnez un événement pour voir les statistiques',
+            'Accès verrouillé : Veuillez d\'abord vous connecter à l\'événement en saisissant le code d\'accès.',
+            style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
           ),
+          action: authProvider.currentEvent != null
+              ? SnackBarAction(
+                  label: 'SAISIR CODE',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    _onEventSelected(authProvider.currentEvent!);
+                  },
+                )
+              : null,
         ),
       );
       return;
@@ -134,7 +165,7 @@ class _EventsListPageState extends State<EventsListPage> {
     final eventProvider = Provider.of<EventProvider>(context);
     final authProvider = Provider.of<AuthProvider>(context);
 
-    String appBarTitle = 'Mes événements';
+    String appBarTitle = authProvider.isAgent ? 'Portail Agent de Scan' : 'Mes événements';
     if (_currentTab != NavItem.home && authProvider.hasEventSelected) {
       appBarTitle = authProvider.currentEvent?.name ?? 'Titre';
     }
@@ -164,6 +195,10 @@ class _EventsListPageState extends State<EventsListPage> {
 
   Widget _buildCurrentBody(
       EventProvider eventProvider, AuthProvider authProvider) {
+    if (authProvider.isAgent && _currentTab == NavItem.home) {
+      return _buildAgentEventsView(authProvider);
+    }
+
     switch (_currentTab) {
       case NavItem.home:
         return _buildEventsList(eventProvider);
@@ -183,6 +218,269 @@ class _EventsListPageState extends State<EventsListPage> {
         }
         return _buildEventsList(eventProvider);
     }
+  }
+
+  Widget _buildAgentEventsView(AuthProvider authProvider) {
+    final event = authProvider.currentEvent;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Banner Agent
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.orange.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.orange.withValues(alpha: 0.4),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: AppColors.orange,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.shield_outlined,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ESPACE AGENT DE SCAN',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.orange,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Vous êtes connecté avec votre compte Agent.',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'VOTRE ÉVÉNEMENT ASSIGNÉ',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.grey,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          if (event == null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.white.withValues(alpha: 0.1)),
+              ),
+              child: Column(
+                children: [
+                  const CircularProgressIndicator(color: AppColors.orange),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Chargement de votre événement...',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: AppColors.orange.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.orange.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: authProvider.isEventConnected
+                              ? AppColors.green.withValues(alpha: 0.2)
+                              : AppColors.orange.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          authProvider.isEventConnected ? 'ÉVÉNEMENT CONNECTÉ (ACTIF)' : 'ACCÈS VERROUILLÉ',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: authProvider.isEventConnected ? AppColors.green : AppColors.orange,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        authProvider.isEventConnected ? Icons.verified_rounded : Icons.lock_outline_rounded,
+                        color: authProvider.isEventConnected ? AppColors.green : AppColors.orange,
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    event.name,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.grey),
+                      const SizedBox(width: 8),
+                      Text(
+                        event.formattedDate,
+                        style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.grey),
+                      ),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.access_time_rounded, size: 16, color: AppColors.grey),
+                      const SizedBox(width: 8),
+                      Text(
+                        event.time,
+                        style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.grey),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 16, color: AppColors.grey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          event.location,
+                          style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.grey),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // BOUTON PRINCIPAL (SE CONNECTER OU ACCÉDER AU SCANNER)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (authProvider.isEventConnected) {
+                          setState(() {
+                            _currentTab = NavItem.scanner;
+                          });
+                        } else {
+                          _onEventSelected(event);
+                        }
+                      },
+                      icon: Icon(
+                        authProvider.isEventConnected
+                            ? Icons.qr_code_scanner_rounded
+                            : Icons.lock_open_rounded,
+                        size: 20,
+                      ),
+                      label: Text(
+                        authProvider.isEventConnected
+                            ? 'ACCÉDER À L\'INTERFACE DE SCAN'
+                            : 'SE CONNECTER À L\'ÉVÉNEMENT',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: authProvider.isEventConnected ? AppColors.green : AppColors.orange,
+                        foregroundColor: AppColors.white,
+                        elevation: 4,
+                        shadowColor: authProvider.isEventConnected ? AppColors.green : AppColors.orangeGlow,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  if (!authProvider.isEventConnected)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.white.withValues(alpha: 0.08)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.grey),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Entrez le code d\'événement pour déverrouiller l\'accès au scanner, la liste des invités et les statistiques.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                color: AppColors.grey,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEventsList(EventProvider eventProvider) {

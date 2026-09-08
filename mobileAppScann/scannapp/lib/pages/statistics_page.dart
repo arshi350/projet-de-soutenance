@@ -29,7 +29,11 @@ class _StatisticsPageState extends State<StatisticsPage> {
   @override
   void initState() {
     super.initState();
-    _loadStatistics();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadStatistics();
+      }
+    });
   }
 
   Future<void> _loadStatistics() async {

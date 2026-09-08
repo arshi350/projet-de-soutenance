@@ -18,14 +18,11 @@ class EventProvider extends ChangeNotifier {
   Future<void> fetchEvents() async {
     _isLoading = true;
     _error = null;
-    notifyListeners();
 
     try {
       _events = await ApiService.getEvents();
-      notifyListeners();
     } catch (e) {
       _error = e.toString();
-      notifyListeners();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -36,18 +33,14 @@ class EventProvider extends ChangeNotifier {
   Future<void> fetchUserEvents(String userId) async {
     _isLoading = true;
     _error = null;
-    notifyListeners();
 
     try {
       _events = await ApiService.getEventsByUser(userId);
-      notifyListeners();
     } on AuthException catch (e) {
       _error = e.message;
-      notifyListeners();
       rethrow;
     } catch (e) {
       _error = e.toString();
-      notifyListeners();
     } finally {
       _isLoading = false;
       notifyListeners();

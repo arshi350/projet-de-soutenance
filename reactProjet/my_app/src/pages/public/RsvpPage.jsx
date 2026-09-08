@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getRsvpDetails, confirmRsvp, declineRsvp } from '../../services/rsvpService';
+import { pollApi } from '../../services/pollApi';
 import { toast, Toaster } from 'react-hot-toast';
 
 export default function RsvpPage() {
@@ -33,6 +34,7 @@ export default function RsvpPage() {
   const [event, setEvent] = useState(null);
   const [error, setError] = useState(null);
   const [currentStatus, setCurrentStatus] = useState('en attente');
+  const [privatePolls, setPrivatePolls] = useState([]);
 
   useEffect(() => {
     if (!token) return;
@@ -45,6 +47,19 @@ export default function RsvpPage() {
           setInvitation(data.invitation);
           setEvent(data.event);
           setCurrentStatus(data.invitation.rsvpStatus || data.invitation.status || 'en attente');
+
+          // Charger les sondages privés pour cet événement privé
+          const eId = data.event?._id || data.invitation?.eventId;
+          if (eId) {
+            try {
+              const pollRes = await pollApi.getPollsByEvent(eId, 'private');
+              if (pollRes.success) {
+                setPrivatePolls((pollRes.data || []).filter(p => p.status === 'active'));
+              }
+            } catch (pollErr) {
+              console.warn('Sondages non récupérés:', pollErr);
+            }
+          }
 
           if (initialAction === 'confirm' && data.invitation.rsvpStatus !== 'confirmé') {
             handleConfirm();
@@ -343,6 +358,30 @@ export default function RsvpPage() {
                 <XCircle className="w-4 h-4 text-red-500" />
                 <span>Signaler mon absence</span>
               </motion.button>
+            )}
+
+            {/* Sondages Privés de l'Événement */}
+            {privatePolls.length > 0 && !isRevoked && (
+              <div className="pt-3 border-t border-gray-200/80 space-y-2">
+                <div className="text-[10px] font-black uppercase tracking-wider text-purple-700 flex items-center gap-1.5 justify-center">
+                  <Sparkles className="w-3 h-3 text-purple-600" />
+                  Sondages Préparatoires Privés ({privatePolls.length})
+                </div>
+                {privatePolls.map((poll) => (
+                  <a
+                    key={poll._id}
+                    href={`/poll/${poll._id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-3 px-4 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold text-xs transition-all flex items-center justify-between shadow-xs"
+                  >
+                    <span className="truncate">{poll.title}</span>
+                    <span className="text-[10px] font-black bg-purple-200 text-purple-800 px-2.5 py-0.5 rounded-full flex items-center gap-1 shrink-0 ml-2">
+                      Répondre <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </a>
+                ))}
+              </div>
             )}
           </div>
         </div>

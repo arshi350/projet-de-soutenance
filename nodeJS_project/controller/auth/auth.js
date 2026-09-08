@@ -76,6 +76,22 @@ const userLogin = async (req, res) => {
         res.cookie('accessToken', accessToken, getCookieOptions(15 * 60 * 1000));
 
         // Données utilisateur renvoyées
+        let agentEventId = user.eventId || null;
+        let agentOrganizerId = user.organizerId || null;
+
+        if (user.role === 'agent' && !agentEventId) {
+            try {
+                const AgentModel = require('../../models/agent/agent');
+                const agentRecord = await AgentModel.findOne({ userId: user._id });
+                if (agentRecord) {
+                    agentEventId = agentRecord.eventId;
+                    agentOrganizerId = agentRecord.organizerId;
+                }
+            } catch (agentLookupErr) {
+                console.warn('Erreur recherche agentRecord login:', agentLookupErr.message);
+            }
+        }
+
         const userInfo = {
             id: user._id,
             first_name: user.first_name,
@@ -83,7 +99,9 @@ const userLogin = async (req, res) => {
             phone: user.phone,
             city: user.city,
             email: user.email,
-            role: user.role
+            role: user.role,
+            eventId: agentEventId,
+            organizerId: agentOrganizerId
         };
 
         return res.status(201).json({

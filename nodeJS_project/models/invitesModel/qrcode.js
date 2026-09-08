@@ -4,12 +4,12 @@ const mongoose = require('mongoose');
 const qrCodeSchema = new mongoose.Schema({
   inviteId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Invites',
+    ref: 'invites',
     required: true
   },
   eventId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Event',
+    ref: 'evenement',
     required: true
   },
   qrCodeData: {
@@ -33,6 +33,6 @@ const qrCodeSchema = new mongoose.Schema({
   }
 });
 
-const QRCodeModel = mongoose.model('QRCode', qrCodeSchema);
+const QRCodeModel = mongoose.model('codeQr', qrCodeSchema);
 
 module.exports = QRCodeModel;

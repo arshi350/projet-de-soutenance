@@ -3,18 +3,18 @@ const mongoose = require('mongoose');
 const SocialPostSchema = new mongoose.Schema({
   eventId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Event',
+    ref: 'evenement',
     required: true,
     index: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'utilisateur',
     required: true
   },
   socialAccountId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'SocialAccount',
+    ref: 'compteSocial',
     required: false
   },
   platform: {
@@ -55,4 +55,4 @@ const SocialPostSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('SocialPost', SocialPostSchema);
+module.exports = mongoose.model('publicationSociale', SocialPostSchema);

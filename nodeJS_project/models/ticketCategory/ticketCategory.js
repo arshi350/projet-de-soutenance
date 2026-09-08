@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const ticketCategorySchema = new mongoose.Schema({
     eventId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'event',
+        ref: 'evenement',
         required: true
     },
     name: {
@@ -52,5 +52,5 @@ const ticketCategorySchema = new mongoose.Schema({
     timestamps: true
 });
 
-const TicketCategory = mongoose.model('TicketCategory', ticketCategorySchema);
+const TicketCategory = mongoose.model('categorieBillet', ticketCategorySchema);
 module.exports = TicketCategory;

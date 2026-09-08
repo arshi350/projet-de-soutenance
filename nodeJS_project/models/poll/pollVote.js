@@ -4,13 +4,13 @@ const pollVoteSchema = new mongoose.Schema(
   {
     pollId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Poll',
+      ref: 'sondage',
       required: true,
       index: true,
     },
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Event',
+      ref: 'evenement',
       required: true,
       index: true,
     },
@@ -45,7 +45,7 @@ const pollVoteSchema = new mongoose.Schema(
 // Un votant ne peut voter qu'une fois par sondage avec son identifiant unique
 pollVoteSchema.index({ pollId: 1, voterIdentifier: 1 }, { unique: true });
 
-const PollVote = mongoose.model('PollVote', pollVoteSchema);
+const PollVote = mongoose.model('voteSondage', pollVoteSchema);
 
 module.exports = {
   PollVote,

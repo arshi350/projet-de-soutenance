@@ -4,12 +4,13 @@ const reminderLogSchema = new mongoose.Schema(
   {
     ruleId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'ReminderRule',
+      ref: 'regleRappel',
+      required: true,
       index: true,
     },
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Event',
+      ref: 'evenement',
       required: true,
       index: true,
     },
@@ -61,7 +62,7 @@ const reminderLogSchema = new mongoose.Schema(
   }
 );
 
-const ReminderLog = mongoose.model('ReminderLog', reminderLogSchema);
+const ReminderLog = mongoose.model('journalRappel', reminderLogSchema);
 
 module.exports = {
   ReminderLog,

@@ -23,7 +23,11 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
   @override
   void initState() {
     super.initState();
-    _loadGuests();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadGuests();
+      }
+    });
   }
 
   Future<void> _loadGuests() async {

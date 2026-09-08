@@ -4,7 +4,7 @@ const reminderRuleSchema = new mongoose.Schema(
   {
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Event',
+      ref: 'evenement',
       required: true,
       index: true,
     },
@@ -70,7 +70,7 @@ const reminderRuleSchema = new mongoose.Schema(
   }
 );
 
-const ReminderRule = mongoose.model('ReminderRule', reminderRuleSchema);
+const ReminderRule = mongoose.model('regleRappel', reminderRuleSchema);
 
 module.exports = {
   ReminderRule,

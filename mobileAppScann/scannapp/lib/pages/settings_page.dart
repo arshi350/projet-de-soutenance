@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_colors.dart';
+import '../services/api_service.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'package:provider/provider.dart';
 import 'login_page.dart';
@@ -196,34 +197,56 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             const SizedBox(height: 24),
-            _buildSectionTitle('COMPTE & SESSION'),
+            _buildSectionTitle('COMPTE & SÉCURITÉ'),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    final authProvider =
-                        Provider.of<AuthProvider>(context, listen: false);
-                    authProvider.logout();
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const LoginPage()),
-                      (route) => false,
-                    );
-                  },
-                  icon: const Icon(Icons.logout_rounded, size: 18),
-                  label: const Text('Se déconnecter'),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.red, width: 1.5),
-                    foregroundColor: AppColors.red,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showChangePasswordDialog(context),
+                      icon: const Icon(Icons.lock_reset_rounded, size: 20),
+                      label: const Text('Changer mon mot de passe'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.orange,
+                        foregroundColor: AppColors.white,
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        final authProvider =
+                            Provider.of<AuthProvider>(context, listen: false);
+                        authProvider.logout();
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const LoginPage()),
+                          (route) => false,
+                        );
+                      },
+                      icon: const Icon(Icons.logout_rounded, size: 18),
+                      label: const Text('Se déconnecter'),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.red, width: 1.5),
+                        foregroundColor: AppColors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -390,6 +413,167 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool isLoading = false;
+    String? errorMessage;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: AppColors.cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: AppColors.white.withValues(alpha: 0.1)),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.lock_reset_rounded, color: AppColors.orange, size: 24),
+                const SizedBox(width: 10),
+                Text(
+                  'Changer le mot de passe',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.white,
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (errorMessage != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.red.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.red.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        errorMessage!,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: AppColors.red,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  TextField(
+                    controller: oldPasswordController,
+                    obscureText: true,
+                    style: const TextStyle(color: AppColors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Mot de passe actuel',
+                      prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.grey),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: newPasswordController,
+                    obscureText: true,
+                    style: const TextStyle(color: AppColors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Nouveau mot de passe',
+                      prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.orange),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: confirmPasswordController,
+                    obscureText: true,
+                    style: const TextStyle(color: AppColors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Confirmer le mot de passe',
+                      prefixIcon: Icon(Icons.check_circle_outline_rounded, color: AppColors.grey),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(ctx),
+                child: Text('Annuler', style: GoogleFonts.plusJakartaSans(color: AppColors.grey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.orange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        final oldPass = oldPasswordController.text.trim();
+                        final newPass = newPasswordController.text.trim();
+                        final confirmPass = confirmPasswordController.text.trim();
+
+                        if (oldPass.isEmpty || newPass.isEmpty) {
+                          setDialogState(() => errorMessage = 'Veuillez remplir tous les champs.');
+                          return;
+                        }
+
+                        if (newPass.length < 6) {
+                          setDialogState(() => errorMessage = 'Le mot de passe doit contenir au moins 6 caractères.');
+                          return;
+                        }
+
+                        if (newPass != confirmPass) {
+                          setDialogState(() => errorMessage = 'Les mots de passe ne correspondent pas.');
+                          return;
+                        }
+
+                        setDialogState(() {
+                          isLoading = true;
+                          errorMessage = null;
+                        });
+
+                        try {
+                          final res = await ApiService.changeAgentPassword(oldPass, newPass);
+                          if (context.mounted) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: AppColors.green,
+                                content: Text(
+                                  res['message'] ?? 'Mot de passe modifié avec succès ! L\'organisateur a été notifié.',
+                                  style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          setDialogState(() {
+                            isLoading = false;
+                            errorMessage = e.toString().replaceAll('Exception: ', '');
+                          });
+                        }
+                      },
+                child: isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(
+                        'Valider',
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

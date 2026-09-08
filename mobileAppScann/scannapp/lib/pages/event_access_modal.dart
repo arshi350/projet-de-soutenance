@@ -42,8 +42,12 @@ class _EventAccessModalState extends State<EventAccessModal> {
 
       if (response) {
         if (!mounted) return;
-        authProvider.selectEvent(widget.event);
-        Navigator.pop(context);
+        authProvider.markEventConnected(widget.event);
+        Navigator.pop(context, true);
+      } else {
+        setState(() {
+          _errorMessage = authProvider.error ?? 'Code d\'événement invalide.';
+        });
       }
     } catch (e) {
       setState(() {

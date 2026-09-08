@@ -3,13 +3,13 @@ const mongoose = require('mongoose');
 const invitationSchema = new mongoose.Schema({
     eventId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Event',
+        ref: 'evenement',
         required: true,
         index: true,
     },
     inviteId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Invites',
+        ref: 'invites',
         required: true,
         index: true,
     },
@@ -155,6 +155,6 @@ const invitationSchema = new mongoose.Schema({
 // Empêcher la création d'invitations en double pour le même invité et le même événement
 invitationSchema.index({ inviteId: 1, eventId: 1 }, { unique: true });
 
-const invitationModel = mongoose.model('Invitations', invitationSchema);
+const invitationModel = mongoose.model('invitations', invitationSchema);
 
 module.exports = { invitationModel };

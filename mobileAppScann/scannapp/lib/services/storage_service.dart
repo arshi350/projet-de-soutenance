@@ -30,6 +30,22 @@ class StorageService {
     return prefs.getString(_userIdKey);
   }
 
+  static const String _userKey = 'user_data';
+
+  static Future<void> saveUser(Map<String, dynamic> user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, jsonEncode(user));
+  }
+
+  static Future<Map<String, dynamic>?> getUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? userJson = prefs.getString(_userKey);
+    if (userJson != null) {
+      return jsonDecode(userJson) as Map<String, dynamic>;
+    }
+    return null;
+  }
+
   // ✅ Version corrigée sans toJson
   static Future<void> cacheEvents(List<EventModel> events) async {
     final prefs = await SharedPreferences.getInstance();
@@ -89,9 +105,35 @@ class StorageService {
     await prefs.clear();
   }
 
+  static const String _eventConnectedKey = 'is_event_connected';
+  static const String _connectedEventIdKey = 'connected_event_id';
+
+  static Future<void> saveEventConnection(String eventId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_eventConnectedKey, true);
+    await prefs.setString(_connectedEventIdKey, eventId);
+  }
+
+  static Future<bool> isEventConnected() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_eventConnectedKey) ?? false;
+  }
+
+  static Future<String?> getConnectedEventId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_connectedEventIdKey);
+  }
+
+  static Future<void> clearEventConnection() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_eventConnectedKey);
+    await prefs.remove(_connectedEventIdKey);
+  }
+
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userIdKey);
+    await clearEventConnection();
   }
 }

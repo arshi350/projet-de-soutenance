@@ -48,6 +48,7 @@ class _LoginPageState extends State<LoginPage> {
     
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: '577580153773-kspan64embstrcjnaji68676a5ovdbfo.apps.googleusercontent.com',
         scopes: ['email', 'profile'],
       );
       final GoogleSignInAccount? account = await googleSignIn.signIn();

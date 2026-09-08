@@ -28,6 +28,8 @@ class _ScanPageState extends State<ScanPage> {
   String _lastScanName = '';
   String _lastScanTime = '';
 
+  bool _isCameraActive = true;
+
   @override
   void initState() {
     super.initState();
@@ -54,25 +56,46 @@ class _ScanPageState extends State<ScanPage> {
     setState(() {
       _isSoundOn = !_isSoundOn;
     });
-    // Le son sera géré via les retours haptiques ou sonores
+  }
+
+  Future<void> _toggleCamera() async {
+    if (_isCameraActive) {
+      await _scannerController.stop();
+      if (mounted) setState(() => _isCameraActive = false);
+    } else {
+      await _scannerController.start();
+      if (mounted) setState(() => _isCameraActive = true);
+    }
   }
 
   void _resetScanner() {
-    // Réinitialiser l'affichage du dernier scan
     setState(() {
       _lastScanResult = '';
       _lastScanName = '';
       _lastScanTime = '';
     });
+    if (!_isCameraActive) {
+      _toggleCamera();
+    }
   }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
-    if (_isProcessing) return;
+    if (_isProcessing || !_isCameraActive) return;
 
     final String? qrCode = capture.barcodes.first.rawValue;
     if (qrCode == null) return;
 
-    setState(() => _isProcessing = true);
+    setState(() {
+      _isProcessing = true;
+      _isCameraActive = false; // Caméra désactivée automatiquement après le scan
+    });
+
+    // Désactivation immédiate du flux caméra
+    try {
+      await _scannerController.stop();
+    } catch (e) {
+      debugPrint('Erreur arrêt caméra: $e');
+    }
 
     try {
       final result = await ScanService.verifyQRCode(qrCode, widget.event.id);
@@ -96,33 +119,33 @@ class _ScanPageState extends State<ScanPage> {
           ),
         );
       } else if (result.alreadyScanned) {
-          // QR déjà scanné (HTTP 409 Conflict)
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ScanWarningPage(
-                event: widget.event,
-                guest: result.guest ??
-                    GuestModel(
-                      id: '',
-                      firstName: 'Billet',
-                      lastName: 'Déjà Scanné',
-                      email: '',
-                      phone: '',
-                      status: 'present',
-                      idEvent: widget.event.id,
-                    ),
-                scannedAt: result.scannedAt,
-                errorMessage: result.error,
-              ),
+        // QR déjà scanné (HTTP 409 Conflict)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ScanWarningPage(
+              event: widget.event,
+              guest: result.guest ??
+                  GuestModel(
+                    id: '',
+                    firstName: 'Billet',
+                    lastName: 'Déjà Scanné',
+                    email: '',
+                    phone: '',
+                    status: 'present',
+                    idEvent: widget.event.id,
+                  ),
+              scannedAt: result.scannedAt,
+              errorMessage: result.error,
             ),
-          );
-        } else {
+          ),
+        );
+      } else {
         // QR invalide ou révoqué
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const ScanFailurePage(),
+            builder: (context) => ScanFailurePage(event: widget.event),
           ),
         );
       }
@@ -131,7 +154,7 @@ class _ScanPageState extends State<ScanPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const ScanFailurePage(),
+          builder: (context) => ScanFailurePage(event: widget.event),
         ),
       );
     } finally {

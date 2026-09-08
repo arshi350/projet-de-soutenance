@@ -4,8 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import '../widgets/bottom_nav_bar.dart';
 
+import '../models/event_model.dart';
+import 'scan_page.dart';
+
 class ScanFailurePage extends StatelessWidget {
-  const ScanFailurePage({super.key});
+  final EventModel? event;
+
+  const ScanFailurePage({super.key, this.event});
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +102,16 @@ class ScanFailurePage extends StatelessWidget {
                     child: SizedBox(
                       height: 50,
                       child: ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          if (event != null) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => ScanPage(event: event!)),
+                            );
+                          } else {
+                            Navigator.pop(context);
+                          }
+                        },
                         icon: const Icon(Icons.refresh_rounded, size: 18),
                         label: Text(
                           'RÉESSAYER',
@@ -123,7 +137,16 @@ class ScanFailurePage extends StatelessWidget {
                     child: SizedBox(
                       height: 50,
                       child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          if (event != null) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => ScanPage(event: event!)),
+                            );
+                          } else {
+                            Navigator.pop(context);
+                          }
+                        },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.grey,
                           side: BorderSide(color: AppColors.white.withValues(alpha: 0.2)),

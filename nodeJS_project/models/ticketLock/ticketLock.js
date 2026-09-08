@@ -9,13 +9,14 @@ const ticketLockSchema = new mongoose.Schema({
     },
     eventId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'event',
-        required: true
+        ref: 'evenement',
+        required: true,
+        index: true
     },
     items: [{
         ticketCategoryId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'TicketCategory',
+            ref: 'categorieBillet',
             required: true
         },
         quantity: {
@@ -55,5 +56,5 @@ const ticketLockSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const TicketLock = mongoose.model('TicketLock', ticketLockSchema);
+const TicketLock = mongoose.model('verrouBillet', ticketLockSchema);
 module.exports = TicketLock;

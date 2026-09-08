@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const SocialAccountSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'utilisateur',
     required: true,
     index: true
   },
@@ -48,4 +48,4 @@ const SocialAccountSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('SocialAccount', SocialAccountSchema);
+module.exports = mongoose.model('compteSocial', SocialAccountSchema);

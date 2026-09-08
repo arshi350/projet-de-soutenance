@@ -72,11 +72,13 @@ export default function PollsTab({ eventInfo }) {
     ],
   });
 
+  const currentEventType = eventInfo?.eventType || 'private';
+
   const loadPolls = async () => {
     if (!eventId) return;
     try {
       setLoading(true);
-      const res = await pollApi.getPollsByEvent(eventId);
+      const res = await pollApi.getPollsByEvent(eventId, currentEventType);
       if (res.success) {
         setPolls(res.data || []);
         if (res.data && res.data.length > 0 && !selectedPoll) {
@@ -108,7 +110,7 @@ export default function PollsTab({ eventInfo }) {
 
   useEffect(() => {
     loadPolls();
-  }, [eventId]);
+  }, [eventId, currentEventType]);
 
   const handleCopyLink = (pollId) => {
     const url = `${window.location.origin}/poll/${pollId}`;
@@ -192,6 +194,7 @@ export default function PollsTab({ eventInfo }) {
       await pollApi.createPoll({
         ...formData,
         eventId,
+        eventType: currentEventType,
         timingType: 'pre_event',
       });
       toast.success('Sondage pré-événement publié avec succès !');
@@ -377,16 +380,27 @@ export default function PollsTab({ eventInfo }) {
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                          isActive
-                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60'
-                            : 'bg-gray-100 text-gray-600 border border-gray-200/60'
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
-                        {isActive ? 'Collecte Ouverte' : 'Clôturé'}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                            isActive
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60'
+                              : 'bg-gray-100 text-gray-600 border border-gray-200/60'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
+                          {isActive ? 'Collecte Ouverte' : 'Clôturé'}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                            poll.eventType === 'public'
+                              ? 'bg-blue-50 text-blue-600 border border-blue-200/60'
+                              : 'bg-purple-50 text-purple-600 border border-purple-200/60'
+                          }`}
+                        >
+                          {poll.eventType === 'public' ? 'Événement Public' : 'Événement Privé'}
+                        </span>
+                      </div>
                       <span className="text-[11px] font-bold text-gray-400">
                         {poll.questions?.length || 0} question(s)
                       </span>

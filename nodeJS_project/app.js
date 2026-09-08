@@ -75,6 +75,7 @@ const socialRouter = require('./routes/socialRoutes');
 const pollRouter = require('./routes/pollRoutes');
 const reminderRouter = require('./routes/reminderRoutes');
 const feedbackRouter = require('./routes/feedbackRoutes');
+const agentRouter = require('./routes/agentRoutes');
 
 const adminSettingsRouter = require('./routes/adminSettings');
 const reportsRouter = require('./routes/reports');
@@ -84,6 +85,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Montage des routes principales
 app.use("/api", userRouter);
 app.use("/api/auth", Authrouter);
+app.use("/api/agent", agentRouter);
 app.use("/api/event", eventRouter);
 app.use("/api/public", publicTicketsRouter);
 app.use("/api/invite", InviteRouter);

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api, { API_BASE_URL } from '../../services/api';
+import { pollApi } from '../../services/pollApi';
 
 // Composants modulaires de la billetterie
 import TicketCard from '../../components/public/ticket/TicketCard';
@@ -26,6 +27,7 @@ export const PublicEventLanding = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [publicPolls, setPublicPolls] = useState([]);
 
   // État du panier & des étapes ( 'select' | 'success' )
   const [selectedQuantities, setSelectedQuantities] = useState({});
@@ -59,6 +61,15 @@ export const PublicEventLanding = () => {
       if (res.data.success) {
         setEventData(res.data.event);
         setCategories(res.data.categories || []);
+
+        try {
+          const pollRes = await pollApi.getPollsByEvent(eventId, 'public');
+          if (pollRes.success) {
+            setPublicPolls((pollRes.data || []).filter(p => p.status === 'active'));
+          }
+        } catch (pollErr) {
+          console.warn('Sondages publics non chargés:', pollErr);
+        }
       } else {
         setError(res.data.message || "Événement introuvable.");
       }
@@ -368,6 +379,38 @@ export const PublicEventLanding = () => {
                   </p>
                 </div>
               </div>
+
+              {/* Sondages publics en cours */}
+              {publicPolls.length > 0 && (
+                <div className="bg-gradient-to-r from-blue-900/30 via-[#0E1522] to-blue-900/20 border border-blue-500/30 rounded-3xl p-6 space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-black text-white flex items-center gap-2">
+                      <Sparkles size={18} className="text-blue-400" />
+                      <span>Sondage Public en Direct ({publicPolls.length})</span>
+                    </h3>
+                    <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      Événement Public
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 font-medium">
+                    Donnez votre avis en amont pour aider l'organisateur à préparer une expérience sur-mesure !
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {publicPolls.map((poll) => (
+                      <a
+                        key={poll._id}
+                        href={`/poll/${poll._id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-4 rounded-2xl bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/40 transition-all flex items-center justify-between text-xs font-bold text-white group"
+                      >
+                        <span className="truncate group-hover:text-blue-300">{poll.title}</span>
+                        <ArrowRight size={14} className="text-blue-400 shrink-0 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Liste des cartes de tickets */}
               <div className="space-y-5">

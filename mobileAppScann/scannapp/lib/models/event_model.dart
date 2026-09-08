@@ -9,6 +9,7 @@ class EventModel {
   int scannedGuests;
   final String accessCode;
   final String status; // 'active', 'upcoming', 'ended'
+  final String category;
 
   EventModel({
     required this.id,
@@ -20,6 +21,7 @@ class EventModel {
     required this.scannedGuests,
     required this.accessCode,
     required this.status,
+    this.category = 'Événement',
   });
 
   double get attendanceRate =>
@@ -61,6 +63,7 @@ class EventModel {
       scannedGuests: json['scannedGuests'] ?? json['scanned'] ?? 0,
       accessCode: json['accessCode'] ?? json['EventCode'] ?? '',
       status: json['status'] ?? 'active',
+      category: json['category'] ?? json['categorie'] ?? 'Événement',
     );
   }
 
@@ -76,6 +79,7 @@ class EventModel {
       'scannedGuests': scannedGuests,
       'accessCode': accessCode,
       'status': status,
+      'category': category,
     };
   }
 

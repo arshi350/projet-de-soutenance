@@ -299,6 +299,180 @@ ${declineUrl}
   }
 }
 
+/**
+ * Envoi des identifiants (Email + Mot de passe par défaut) à l'agent de scan
+ */
+async function sendAgentCredentialsEmail({ agentEmail, agentName = 'Agent', defaultPassword, eventTitle, eventCode }) {
+  try {
+    if (!agentEmail) return { success: false, error: "Adresse email de l'agent manquante." };
+
+    const subject = `Vos identifiants Agent de Scan - ${eventTitle || 'Événement'}`;
+
+    const textContent = `
+Bonjour ${agentName},
+
+Un compte Agent de Scan vous a été attribué pour l'événement : ${eventTitle}
+
+Voici vos identifiants pour vous connecter à l'application mobile ARSHI EVENT SCAN :
+Email : ${agentEmail}
+Mot de passe par défaut : ${defaultPassword}
+Code d'événement : ${eventCode || 'Non spécifié'}
+
+Veuillez télécharger l'application mobile, vous connecter et modifier votre mot de passe dès votre première connexion.
+    `.trim();
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>${subject}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0f172a; font-family: sans-serif; color: #f8fafc;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="padding: 30px 10px;">
+    <tr>
+      <td align="center">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #1e293b; border-radius: 20px; border: 1px solid #334155; overflow: hidden; padding: 30px; text-align: left;">
+          <tr>
+            <td>
+              <div style="font-size: 11px; font-weight: 800; color: #f97316; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
+                ACCÈS AGENT DE SCAN
+              </div>
+              <h2 style="color: #ffffff; font-size: 22px; margin: 0 0 16px 0;">Identifiants d'Accès Mobile</h2>
+              <p style="color: #94a3b8; font-size: 14px; line-height: 1.5;">
+                Bonjour <strong style="color: #ffffff;">${agentName}</strong>,<br>
+                L'organisateur vous a inscrit comme Agent de Scan pour l'événement <strong style="color: #f97316;">${eventTitle}</strong>.
+              </p>
+              
+              <div style="background-color: #0f172a; border-radius: 14px; border: 1px solid #334155; padding: 20px; margin: 20px 0;">
+                <p style="margin: 0 0 10px 0; font-size: 13px; color: #94a3b8;">Email de connexion : <strong style="color: #ffffff;">${agentEmail}</strong></p>
+                <p style="margin: 0 0 10px 0; font-size: 13px; color: #94a3b8;">Mot de passe par défaut : <strong style="color: #f97316; font-size: 16px; letter-spacing: 1px;">${defaultPassword}</strong></p>
+                ${eventCode ? `<p style="margin: 0; font-size: 13px; color: #94a3b8;">Code d'Événement : <strong style="color: #38bdf8; font-size: 16px; letter-spacing: 2px;">${eventCode}</strong></p>` : ''}
+              </div>
+
+              <p style="color: #94a3b8; font-size: 13px; line-height: 1.5;">
+                Connectez-vous sur l'application mobile <strong>ARSHI SCAN</strong> pour commencer les contrôles d'entrée. N'oubliez pas de modifier votre mot de passe depuis les paramètres de votre compte.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    const fromEmail = process.env.BREVO_FROM_EMAIL || 'no-reply@arshievent.com';
+    const fromName = (process.env.BREVO_FROM_NAME || 'ARSHI Event').replace(/%20/g, ' ');
+
+    const sendSmtpEmail = {
+      sender: { email: fromEmail, name: fromName },
+      to: [{ email: agentEmail, name: agentName }],
+      subject,
+      textContent,
+      htmlContent
+    };
+
+    const response = await axios.post(BREVO_EMAIL_API_URL, sendSmtpEmail, {
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error('Erreur sendAgentCredentialsEmail:', error.response?.data || error.message);
+    return { success: false, error: error.response?.data?.message || error.message };
+  }
+}
+
+/**
+ * Envoi automatique du Code d'Événement par mail aux agents
+ */
+async function sendEventCodeEmail({ agentEmail, agentName = 'Agent', eventTitle, eventCode }) {
+  try {
+    if (!agentEmail) return { success: false, error: "Adresse email de l'agent manquante." };
+
+    const subject = `Code d'accès Événement : ${eventCode} - ${eventTitle}`;
+
+    const textContent = `
+Bonjour ${agentName},
+
+Voici le code d'accès officiel pour effectuer le scan de l'événement : ${eventTitle}
+CODE ÉVÉNEMENT : ${eventCode}
+
+Utilisez ce code dans l'application mobile ARSHI SCAN pour déverrouiller le module de contrôle des invités.
+    `.trim();
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>${subject}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0f172a; font-family: sans-serif; color: #f8fafc;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="padding: 30px 10px;">
+    <tr>
+      <td align="center">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #1e293b; border-radius: 20px; border: 1px solid #334155; padding: 30px; text-align: center;">
+          <tr>
+            <td>
+              <div style="font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
+                CODE DE SCAN ÉVÉNEMENT
+              </div>
+              <h2 style="color: #ffffff; font-size: 22px; margin: 0 0 16px 0;">${eventTitle}</h2>
+              <p style="color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
+                Bonjour ${agentName}, voici le code unique d'accès pour scanner les billets et invités de cet événement.
+              </p>
+              
+              <div style="background-color: #0f172a; border-radius: 16px; border: 2px dashed #38bdf8; padding: 24px; margin: 0 auto 20px auto; max-width: 320px;">
+                <span style="font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">CODE DE SCAN</span><br>
+                <strong style="color: #38bdf8; font-size: 32px; letter-spacing: 4px; display: inline-block; margin-top: 6px;">${eventCode}</strong>
+              </div>
+
+              <p style="color: #94a3b8; font-size: 13px;">
+                Saisissez ce code dans votre application mobile pour activer le contrôle des pass.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    const fromEmail = process.env.BREVO_FROM_EMAIL || 'no-reply@arshievent.com';
+    const fromName = (process.env.BREVO_FROM_NAME || 'ARSHI Event').replace(/%20/g, ' ');
+
+    const sendSmtpEmail = {
+      sender: { email: fromEmail, name: fromName },
+      to: [{ email: agentEmail, name: agentName }],
+      subject,
+      textContent,
+      htmlContent
+    };
+
+    const response = await axios.post(BREVO_EMAIL_API_URL, sendSmtpEmail, {
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error('Erreur sendEventCodeEmail:', error.response?.data || error.message);
+    return { success: false, error: error.response?.data?.message || error.message };
+  }
+}
+
 module.exports = {
   sendEmailViaBrevo,
-};
+  sendAgentCredentialsEmail,
+  sendEventCodeEmail,
+};

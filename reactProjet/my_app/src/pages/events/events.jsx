@@ -13,12 +13,14 @@ import PollsTab from './eventPages/PollsTab';
 import RemindersTab from './eventPages/RemindersTab';
 import FeedbackTab from './eventPages/FeedbackTab';
 import SalesAnalyticsTab from './eventPages/SalesAnalyticsTab';
+import AgentsTab from './eventPages/AgentsTab';
 
 // Onglets pour événements privés
 const PRIVATE_TABS = [
   { id: 'overview', label: "Vue d'ensemble" },
   { id: 'invites', label: 'Invités' },
   { id: 'invitations', label: 'Invitations' },
+  { id: 'agents', label: 'Agents de Scan' },
   { id: 'polls', label: 'Sondages Pré-Événement' },
   { id: 'reminders', label: 'Relances IA' },
   { id: 'feedback', label: 'Feedback Post-Event' },
@@ -31,7 +33,8 @@ const PUBLIC_TABS = [
   { id: 'ventes', label: 'Ventes & Revenus' },
   { id: 'billetterie', label: 'Billetterie' },
   { id: 'marketing', label: 'Campagnes Marketing IA' },
-  { id: 'invites', label: 'Participants / Billets' },
+  { id: 'invites', label: 'Participants' },
+  { id: 'agents', label: 'Agents de Scan' },
   { id: 'polls', label: 'Sondages Pré-Événement' },
   { id: 'feedback', label: 'Feedback & Avis IA' },
   { id: 'parametres', label: 'Paramètres' },
@@ -98,6 +101,8 @@ export function EventsManage() {
         return <TicketDesignerTab eventInfo={eventInfo} />;
       case 'invitations':
         return <Invitations eventInfo={eventInfo} />;
+      case 'agents':
+        return <AgentsTab eventInfo={eventInfo} />;
       case 'polls':
         return <PollsTab eventInfo={eventInfo} />;
       case 'reminders':

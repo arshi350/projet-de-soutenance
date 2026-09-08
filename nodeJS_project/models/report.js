@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 const reportSchema = new mongoose.Schema({
     reporterId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'user',
+        ref: 'utilisateur',
         required: false
     },
     eventId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'event',
+        ref: 'evenement',
         required: false
     },
     targetType: {
@@ -39,5 +39,5 @@ const reportSchema = new mongoose.Schema({
     }
 });
 
-const Report = mongoose.model('Report', reportSchema);
+const Report = mongoose.model('rapport', reportSchema);
 module.exports = Report;

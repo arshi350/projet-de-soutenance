@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const auditLogSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'user',
+        ref: 'utilisateur',
         required: false
     },
     type: {
@@ -33,5 +33,5 @@ const auditLogSchema = new mongoose.Schema({
     }
 });
 
-const AuditLog = mongoose.model('AuditLog', auditLogSchema);
+const AuditLog = mongoose.model('journalAudit', auditLogSchema);
 module.exports = AuditLog;

@@ -17,14 +17,11 @@ class GuestProvider extends ChangeNotifier {
   Future<void> fetchGuests(String eventId) async {
     _isLoading = true;
     _error = null;
-    notifyListeners();
 
     try {
       _guests = await ApiService.getGuests(eventId);
-      notifyListeners();
     } catch (e) {
       _error = e.toString();
-      notifyListeners();
     } finally {
       _isLoading = false;
       notifyListeners();

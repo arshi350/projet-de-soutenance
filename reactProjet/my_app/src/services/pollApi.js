@@ -13,9 +13,10 @@ export const pollApi = {
     return response.data;
   },
 
-  // Récupérer les sondages d'un événement
-  getPollsByEvent: async (eventId) => {
-    const response = await api.get(`/polls/event/${eventId}`);
+  // Récupérer les sondages d'un événement (avec option eventType)
+  getPollsByEvent: async (eventId, eventType) => {
+    const url = eventType ? `/polls/event/${eventId}?eventType=${eventType}` : `/polls/event/${eventId}`;
+    const response = await api.get(url);
     return response.data;
   },
 

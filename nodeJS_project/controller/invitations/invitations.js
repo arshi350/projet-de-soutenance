@@ -32,7 +32,7 @@ const createInvitations = async (req, res) => {
         // Si aucun invité n'existe encore dans la base pour cet événement, en créer un par défaut
         if (!invites || invites.length === 0) {
             try {
-                const InvitesFallback = mongoose.model('Invites');
+                const InvitesFallback = mongoose.model('invites');
                 invites = await InvitesFallback.find({ idEvent: eventId });
             } catch (fallbackErr) {
                 console.warn('Fallback invite warning:', fallbackErr.message);

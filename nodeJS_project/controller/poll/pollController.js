@@ -7,7 +7,7 @@ const { Poll } = require('../../models/poll/poll');
  */
 const createPoll = async (req, res) => {
   try {
-    const { eventId, title, description, timingType, isAnonymous, showLiveResults, autoCloseAt, questions } = req.body;
+    const { eventId, eventType, title, description, timingType, isAnonymous, showLiveResults, autoCloseAt, questions } = req.body;
     const creatorId = req.user?.id || req.user?._id;
 
     if (!eventId || !title) {
@@ -17,6 +17,7 @@ const createPoll = async (req, res) => {
     const poll = await pollService.createPoll({
       eventId,
       creatorId,
+      eventType,
       title,
       description,
       timingType,
@@ -44,7 +45,8 @@ const createPoll = async (req, res) => {
 const getPollsByEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
-    const polls = await pollService.getPollsByEvent(eventId);
+    const { eventType } = req.query;
+    const polls = await pollService.getPollsByEvent(eventId, eventType);
     return res.status(200).json({ success: true, data: polls });
   } catch (error) {
     console.error('Erreur getPollsByEvent controller:', error);

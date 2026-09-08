@@ -47,15 +47,15 @@ const googleLogin = async (req, res) => {
         // Recherche de l'utilisateur par son email dans la base de données
         let user = await userModel.findOne({ email: email.toLowerCase().trim() });
 
-        // Si la vérification préalable est demandée et que l'utilisateur n'existe pas dans la BDD
-        if (!user && (requireExisting || requireExisting === undefined)) {
+        // Si la vérification stricte de compte préexistant est explicitement exigée (ex: application mobile scannApp de contrôle)
+        if (!user && requireExisting === true) {
             return res.status(404).json({
                 message: "Compte introuvable dans la base de données. Aucun utilisateur n'est inscrit avec cet email Google."
             });
         }
 
-        // S'il n'existe pas encore et que la création automatique est explicitement autorisée (requireExisting === false)
-        if (!user && requireExisting === false) {
+        // S'il n'existe pas encore et que la vérification stricte n'est pas activée (Création automatique autorisée)
+        if (!user) {
             // Mot de passe aléatoire hautement sécurisé (l'utilisateur se connectera via Google)
             const randomPass = crypto.randomBytes(16).toString('hex');
             const salt = await bcrypt.genSalt(10);

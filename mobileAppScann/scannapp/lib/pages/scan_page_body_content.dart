@@ -26,6 +26,8 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
   String _lastScanName = '';
   String _lastScanTime = '';
 
+  bool _isCameraActive = true;
+
   @override
   void initState() {
     super.initState();
@@ -50,20 +52,44 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
     setState(() => _isSoundOn = !_isSoundOn);
   }
 
+  Future<void> _toggleCamera() async {
+    if (_isCameraActive) {
+      await _scannerController.stop();
+      if (mounted) setState(() => _isCameraActive = false);
+    } else {
+      await _scannerController.start();
+      if (mounted) setState(() => _isCameraActive = true);
+    }
+  }
+
   void _resetScanner() {
     setState(() {
       _lastScanResult = '';
       _lastScanName = '';
       _lastScanTime = '';
     });
+    if (!_isCameraActive) {
+      _toggleCamera();
+    }
   }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
-    if (_isProcessing) return;
+    if (_isProcessing || !_isCameraActive) return;
     final String? qrCode = capture.barcodes.first.rawValue;
     if (qrCode == null) return;
 
-    setState(() => _isProcessing = true);
+    setState(() {
+      _isProcessing = true;
+      _isCameraActive = false; // Caméra désactivée automatiquement après le scan
+    });
+
+    // Désactivation immédiate du flux caméra
+    try {
+      await _scannerController.stop();
+    } catch (e) {
+      debugPrint('Erreur arrêt caméra: $e');
+    }
+
     try {
       final result = await ScanService.verifyQRCode(qrCode, widget.event.id);
 
@@ -96,14 +122,14 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ScanFailurePage()),
+          MaterialPageRoute(builder: (context) => ScanFailurePage(event: widget.event)),
         );
       }
     } catch (e) {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const ScanFailurePage()),
+        MaterialPageRoute(builder: (context) => ScanFailurePage(event: widget.event)),
       );
     } finally {
       if (mounted) {

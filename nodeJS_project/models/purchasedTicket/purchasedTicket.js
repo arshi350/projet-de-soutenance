@@ -3,13 +3,13 @@ const mongoose = require('mongoose');
 const purchasedTicketSchema = new mongoose.Schema({
     eventId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'event',
+        ref: 'evenement',
         required: true,
         index: true
     },
     ticketCategoryId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'TicketCategory',
+        ref: 'categorieBillet',
         required: true,
         index: true
     },
@@ -73,11 +73,11 @@ const purchasedTicketSchema = new mongoose.Schema({
     },
     scannedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'user'
+        ref: 'utilisateur'
     }
 }, {
     timestamps: true
 });
 
-const PurchasedTicket = mongoose.model('PurchasedTicket', purchasedTicketSchema);
+const PurchasedTicket = mongoose.model('billetAchete', purchasedTicketSchema);
 module.exports = PurchasedTicket;

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const SocialVerificationSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'user',
+    ref: 'utilisateur',
     required: true,
     index: true
   },
@@ -74,4 +74,4 @@ const SocialVerificationSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('SocialVerification', SocialVerificationSchema);
+module.exports = mongoose.model('verificationSociale', SocialVerificationSchema);

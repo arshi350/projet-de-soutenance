@@ -35,5 +35,5 @@ const platformSettingsSchema = new mongoose.Schema({
     }
 });
 
-const PlatformSettings = mongoose.model('PlatformSettings', platformSettingsSchema);
+const PlatformSettings = mongoose.model('parametresPlateforme', platformSettingsSchema);
 module.exports = PlatformSettings;

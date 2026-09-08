@@ -4,13 +4,13 @@ const postEventFeedbackSchema = new mongoose.Schema(
   {
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Event',
+      ref: 'evenement',
       required: true,
       index: true,
     },
     inviteId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Invitation',
+      ref: 'invitations',
       default: null,
     },
     guestEmail: {
@@ -67,7 +67,7 @@ const postEventFeedbackSchema = new mongoose.Schema(
 
 postEventFeedbackSchema.index({ eventId: 1, voterIdentifier: 1 }, { unique: true });
 
-const PostEventFeedback = mongoose.model('PostEventFeedback', postEventFeedbackSchema);
+const PostEventFeedback = mongoose.model('retourPostEvenement', postEventFeedbackSchema);
 
 module.exports = {
   PostEventFeedback,

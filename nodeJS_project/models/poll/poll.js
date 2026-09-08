@@ -31,14 +31,20 @@ const pollSchema = new mongoose.Schema(
   {
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Event',
+      ref: 'evenement',
       required: true,
       index: true,
     },
     creatorId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'utilisateur',
       required: true,
+    },
+    eventType: {
+      type: String,
+      enum: ['private', 'public'],
+      default: 'private',
+      index: true,
     },
     title: {
       type: String,
@@ -80,11 +86,13 @@ const pollSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true,
+    timestamps: true,  
   }
 );
 
-const Poll = mongoose.model('Poll', pollSchema);
+
+
+const Poll = mongoose.model('sondage', pollSchema);
 
 module.exports = {
   Poll,

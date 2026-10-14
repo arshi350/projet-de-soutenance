@@ -12,7 +12,8 @@ class GuestProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   
-  int get scannedGuests => _guests?.where((g) => g.status == 'present').length ?? 0;
+  int get scannedGuests =>
+      _guests?.where((g) => g.isScanned || g.isPresent || g.status == 'present').length ?? 0;
 
   Future<void> fetchGuests(String eventId) async {
     _isLoading = true;

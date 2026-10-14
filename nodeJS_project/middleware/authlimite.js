@@ -2,7 +2,7 @@ const rateLimit = require("express-rate-limit")
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, //15 minutes
-    limit:3, //limite de 3 requetes par IP
+    limit: process.env.NODE_ENV === 'production' ? 5 : 50, // 50 tentatives en développement
     message: "trop de tentatives de connexion, essayez a nouveau dans 15 minutes",
     skipSuccessfulRequests: true, //ne compte pas les requetes reussites
     standardHeaders: true, //renvoie les informations de limite dans les en-têtes de réponse

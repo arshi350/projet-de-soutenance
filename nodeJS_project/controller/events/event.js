@@ -1,6 +1,10 @@
 const { eventModel } = require("../../models/eventModels/event");
 const { userModel } = require("../../models/user");
+const { invitationModel } = require("../../models/invitation/invitation");
+const Invites = require("../../models/invitesModel/invites");
+const PurchasedTicket = require("../../models/purchasedTicket/purchasedTicket");
 const { createNotification } = require('../../services/notificationService');
+const { deleteEventCascade } = require('../../services/cascadeDeleteService');
 const mongoose = require('mongoose')
 const path = require('path');
 
@@ -148,11 +152,45 @@ const getAllEventByUser = async (req, res) => {
             });
         }
 
-        // Succès : événements trouvés
+        const eventsWithStats = await Promise.all(
+            events.map(async (event) => {
+                const evObj = event.toObject ? event.toObject() : { ...event };
+                try {
+                    let total = 0;
+                    let scanned = 0;
+
+                    if (evObj.eventType === 'public') {
+                        [total, scanned] = await Promise.all([
+                            PurchasedTicket.countDocuments({ eventId: event._id, status: { $ne: 'cancelled' } }),
+                            PurchasedTicket.countDocuments({ eventId: event._id, status: 'scanned' })
+                        ]);
+                    } else {
+                        const [invsTotal, invsScanned, docsTotal, docsScanned] = await Promise.all([
+                            Invites.countDocuments({ idEvent: event._id }),
+                            Invites.countDocuments({ idEvent: event._id, $or: [{ isPresent: true }, { isScanned: true }] }),
+                            invitationModel.countDocuments({ eventId: event._id }),
+                            invitationModel.countDocuments({ eventId: event._id, $or: [{ isPresent: true }, { isScanned: true }] })
+                        ]);
+                        total = Math.max(invsTotal, docsTotal);
+                        scanned = Math.max(invsScanned, docsScanned);
+                    }
+
+                    evObj.totalGuests = total;
+                    evObj.totalInvites = total;
+                    evObj.scannedGuests = scanned;
+                    evObj.scanned = scanned;
+                } catch (e) {
+                    console.warn(`Erreur stats event ${event._id}:`, e.message);
+                }
+                return evObj;
+            })
+        );
+
+        // Succès : événements trouvés avec stats réelles
         return res.status(200).json({ 
             message: "Événements récupérés avec succès", 
-            count: events.length,  // Nombre d'événements trouvés
-            events 
+            count: eventsWithStats.length,
+            events: eventsWithStats 
         });
 
     } catch (error) {
@@ -165,39 +203,30 @@ const getAllEventByUser = async (req, res) => {
     }
 };
 
-//supprimer un evenements de la base de donnee
+//supprimer un evenements de la base de donnee avec suppression en cascade
 const deleteEvent = async (req, res) => {
     try {
         const id = req.params.id;
 
         //verification de la validite de l'id de l'evenement
         if(!mongoose.Types.ObjectId.isValid(id)){
-            return res.status(400).json({message: "id de l'evenement invalide"})
+            return res.status(400).json({ message: "id de l'evenement invalide" });
         }
 
-        //recherche et suppression de l'evenement
-        const event = await eventModel.findByIdAndDelete(id)
-        if(!event){
-            return res.status(404).json({message: "evenement non trouvé"})
+        // Suppression en cascade complète (invités, QR codes, agents, billets, feedbacks, etc.)
+        const cascadeResult = await deleteEventCascade(id);
+        if (!cascadeResult.success && cascadeResult.notFound) {
+            return res.status(404).json({ message: "evenement non trouvé" });
         }
 
-        try {
-            await createNotification({
-                userId: event.userId,
-                title: 'Événement supprimé',
-                message: `Votre événement "${event.titre}" a été supprimé.`,
-                type: 'event',
-                referenceId: event._id,
-                referenceType: 'event'
-            });
-        } catch (notifError) {
-            console.warn('Notification non créée pour la suppression d événement :', notifError.message);
-        }
-
-        return res.status(200).json({message: "evenement supprimé avec succès", event})
+        return res.status(200).json({
+            message: "evenement et toutes ses données associées supprimés avec succès",
+            event: { _id: id, titre: cascadeResult.eventTitle },
+            deletedDetails: cascadeResult.deletedCounts
+        });
         
     } catch (error) {
-        console.log(error);
+        console.error("Erreur lors de la suppression en cascade de l'événement:", error);
         res.status(500).json({ message: "Erreur lors de la suppression de l'événement", error: error.message });
     }
 }
@@ -288,23 +317,83 @@ const getRecentEventsByUser = async (req, res) => {
 
 
 //recuperer tous les evenements recent de la base de donnee
-const getRecentvents = async (req, res) =>{
+const getRecentvents = async (req, res) => {
     try {
+        //recuperer les 5 derniers evenements de la base de donnees avec infos organisateur
+        const events = await eventModel.find().populate('userId', 'first_name last_name email').sort({ _id: -1 }).limit(5);
 
-        //recuperer les 5 dernier evenement de la base de donnees
-        const events = await eventModel.find().sort({createdAt: -1}).limit(5);
+        const eventsWithStats = await Promise.all(
+            events.map(async (event) => {
+                const evObj = event.toObject ? event.toObject() : { ...event };
+
+                // Extraire le nom de l'organisateur
+                if (evObj.userId && typeof evObj.userId === 'object') {
+                    const fullName = `${evObj.userId.first_name || ''} ${evObj.userId.last_name || ''}`.trim();
+                    evObj.organizerName = fullName || evObj.userId.email || 'Organisateur';
+                } else {
+                    evObj.organizerName = 'Organisateur';
+                }
+
+                try {
+                    let totalGuests = 0;
+                    let presentGuests = 0;
+
+                    if (evObj.eventType === 'public') {
+                        // Billetterie publique
+                        const [ticketsSold, ticketsScanned] = await Promise.all([
+                            PurchasedTicket.countDocuments({ eventId: event._id, status: { $ne: 'cancelled' } }),
+                            PurchasedTicket.countDocuments({ eventId: event._id, status: 'scanned' })
+                        ]);
+                        totalGuests = ticketsSold;
+                        presentGuests = ticketsScanned;
+                    } else {
+                        // Événement privé (invités et invitations)
+                        const [invitesCount, invitesPresent, invitationDocsCount, invitationDocsPresent] = await Promise.all([
+                            Invites.countDocuments({ idEvent: event._id }),
+                            Invites.countDocuments({ idEvent: event._id, isPresent: true }),
+                            invitationModel.countDocuments({ eventId: event._id }),
+                            invitationModel.countDocuments({ eventId: event._id, $or: [{ isPresent: true }, { isScanned: true }] })
+                        ]);
+
+                        totalGuests = Math.max(invitesCount, invitationDocsCount);
+                        presentGuests = Math.max(invitesPresent, invitationDocsPresent);
+                    }
+
+                    // Repli sur les champs de l'événement si aucune liste détaillée d'invités
+                    if (totalGuests === 0 && (evObj.totalInvites > 0 || evObj.confirmedInvites > 0)) {
+                        totalGuests = evObj.totalInvites || evObj.confirmedInvites || 0;
+                        presentGuests = evObj.attendeesCount || 0;
+                    }
+
+                    const tauxPresence = totalGuests > 0 
+                        ? Math.min(100, Math.round((presentGuests / totalGuests) * 100)) 
+                        : 0;
+
+                    evObj.totalInvites = totalGuests;
+                    evObj.totalGuests = totalGuests;
+                    evObj.presentGuests = presentGuests;
+                    evObj.attendeesCount = presentGuests;
+                    evObj.tauxPresence = tauxPresence;
+                } catch (statsErr) {
+                    console.warn(`Erreur calcul stats invitation pour event ${event._id}:`, statsErr.message);
+                    evObj.tauxPresence = 0;
+                    evObj.totalGuests = evObj.totalInvites || 0;
+                    evObj.presentGuests = 0;
+                }
+                return evObj;
+            })
+        );
 
         return res.status(200).json({ 
             message: "Événements récents récupérés avec succès", 
-            count: events.length, 
-            events 
-        })
-        
-
+            count: eventsWithStats.length, 
+            events: eventsWithStats 
+        });
     } catch (error) {
-        return res.status(500).json({message : "erreur lors de la recuperation de l'evenement", erreur : error})
+        console.error("Erreur getRecentvents:", error);
+        return res.status(500).json({ message: "erreur lors de la recuperation de l'evenement", erreur: error.message || error });
     }
-}
+};
 
 // Calcul de devis d'événement (Tarification dynamique)
 const calculateEventQuote = async (req, res) => {

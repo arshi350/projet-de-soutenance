@@ -14,8 +14,15 @@ class ScanFailurePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.background : const Color(0xFFF4F6F9);
+    final cardBg = isDark ? AppColors.cardBackground : Colors.white;
+    final textColor = isDark ? AppColors.white : AppColors.blue;
+    final subtextColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+    final borderColor = isDark ? AppColors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Container(
           width: double.infinity,
@@ -54,22 +61,22 @@ class ScanFailurePage extends StatelessWidget {
                 'Ce QR code n\'existe pas ou est incorrect.',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 14,
-                  color: AppColors.grey,
+                  color: subtextColor,
                 ),
               ),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.cardBackground,
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.white.withValues(alpha: 0.1),
+                    color: borderColor,
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                       blurRadius: 15,
                       offset: const Offset(0, 4),
                     ),
@@ -83,15 +90,15 @@ class ScanFailurePage extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.white,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 14),
-                    _buildBulletPoint('Le QR code provient de l\'invitation officielle ARSHI EVENT.'),
+                    _buildBulletPoint('Le QR code provient de l\'invitation officielle ARSHI EVENT.', subtextColor),
                     const SizedBox(height: 10),
-                    _buildBulletPoint('L\'invitation n\'a pas été annulée ou expirée.'),
+                    _buildBulletPoint('L\'invitation n\'a pas été annulée ou expirée.', subtextColor),
                     const SizedBox(height: 10),
-                    _buildBulletPoint('L\'invité est inscrit sur cet événement spécifique.'),
+                    _buildBulletPoint('L\'invité est inscrit sur cet événement spécifique.', subtextColor),
                   ],
                 ),
               ),
@@ -148,8 +155,8 @@ class ScanFailurePage extends StatelessWidget {
                           }
                         },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.grey,
-                          side: BorderSide(color: AppColors.white.withValues(alpha: 0.2)),
+                          foregroundColor: subtextColor,
+                          side: BorderSide(color: borderColor),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -179,7 +186,7 @@ class ScanFailurePage extends StatelessWidget {
     );
   }
 
-  Widget _buildBulletPoint(String text) {
+  Widget _buildBulletPoint(String text, Color textColor) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -198,7 +205,7 @@ class ScanFailurePage extends StatelessWidget {
             text,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
-              color: AppColors.grey,
+              color: textColor,
               height: 1.3,
             ),
           ),

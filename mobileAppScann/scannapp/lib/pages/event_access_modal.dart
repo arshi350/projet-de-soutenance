@@ -64,20 +64,31 @@ class _EventAccessModalState extends State<EventAccessModal> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.cardBackground : Colors.white;
+    final textColor = isDark ? AppColors.white : AppColors.blue;
+    final subtextColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+    final borderColor = isDark
+        ? AppColors.white.withValues(alpha: 0.12)
+        : const Color(0xFFE2E8F0);
+    final handleColor = isDark
+        ? AppColors.white.withValues(alpha: 0.2)
+        : const Color(0xFFCBD5E1);
+
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: cardBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(
-          color: AppColors.white.withValues(alpha: 0.12),
+          color: borderColor,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.6),
+            color: isDark ? Colors.black.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.1),
             blurRadius: 30,
             offset: const Offset(0, -10),
           ),
@@ -95,7 +106,7 @@ class _EventAccessModalState extends State<EventAccessModal> {
                 width: 44,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: AppColors.white.withValues(alpha: 0.2),
+                  color: handleColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -114,7 +125,7 @@ class _EventAccessModalState extends State<EventAccessModal> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: AppColors.grey),
+                  icon: Icon(Icons.close_rounded, color: subtextColor),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -125,7 +136,7 @@ class _EventAccessModalState extends State<EventAccessModal> {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppColors.white,
+                color: textColor,
               ),
             ),
             const SizedBox(height: 24),
@@ -134,7 +145,7 @@ class _EventAccessModalState extends State<EventAccessModal> {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.grey,
+                color: subtextColor,
                 letterSpacing: 1,
               ),
             ),
@@ -147,16 +158,30 @@ class _EventAccessModalState extends State<EventAccessModal> {
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 10,
-                color: AppColors.white,
+                color: textColor,
               ),
               decoration: InputDecoration(
                 hintText: 'GT25XXXX',
                 hintStyle: GoogleFonts.plusJakartaSans(
                   fontSize: 20,
                   letterSpacing: 8,
-                  color: AppColors.grey.withValues(alpha: 0.4),
+                  color: subtextColor.withValues(alpha: 0.4),
                 ),
                 counterText: '',
+                filled: true,
+                fillColor: isDark ? AppColors.greyBackground : const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: isDark ? AppColors.greyLight : const Color(0xFFCBD5E1)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: isDark ? AppColors.greyLight : const Color(0xFFCBD5E1)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: AppColors.orange, width: 2),
+                ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 18),
               ),
               onChanged: (_) => setState(() => _errorMessage = ''),
@@ -219,10 +244,12 @@ class _EventAccessModalState extends State<EventAccessModal> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.blueLight.withValues(alpha: 0.4),
+                color: isDark
+                    ? AppColors.blueLight.withValues(alpha: 0.4)
+                    : const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: AppColors.blueAccent.withValues(alpha: 0.3),
+                  color: AppColors.blueAccent.withValues(alpha: isDark ? 0.3 : 0.2),
                 ),
               ),
               child: Row(
@@ -234,7 +261,7 @@ class _EventAccessModalState extends State<EventAccessModal> {
                       'Demandez le code d\'accès de l\'événement auprès de l\'organisateur principal.',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
-                        color: AppColors.white.withValues(alpha: 0.9),
+                        color: isDark ? AppColors.white.withValues(alpha: 0.9) : const Color(0xFF1E40AF),
                         height: 1.3,
                       ),
                     ),

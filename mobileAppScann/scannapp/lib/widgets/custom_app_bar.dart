@@ -19,19 +19,27 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? AppColors.white : AppColors.blue;
+    final appBarBg = isDark ? AppColors.blue : Colors.white;
+    final dividerColor = isDark
+        ? AppColors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE2E8F0);
+
     return AppBar(
       title: Text(
         title,
         style: GoogleFonts.plusJakartaSans(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: AppColors.white,
+          color: primaryTextColor,
           letterSpacing: 0.3,
         ),
       ),
+      iconTheme: IconThemeData(color: primaryTextColor),
       leading: showBackButton
           ? IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.white),
+              icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: primaryTextColor),
               onPressed: () {
                 if (onBackPressed != null) {
                   onBackPressed!();
@@ -42,12 +50,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             )
           : null,
       actions: action != null ? [action!, const SizedBox(width: 8)] : null,
-      backgroundColor: AppColors.blue,
+      backgroundColor: appBarBg,
       elevation: 0,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
         child: Container(
-          color: AppColors.white.withValues(alpha: 0.08),
+          color: dividerColor,
           height: 1,
         ),
       ),

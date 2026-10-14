@@ -48,9 +48,17 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
   @override
   Widget build(BuildContext context) {
     final guestProvider = Provider.of<GuestProvider>(context);
+    final allGuests = guestProvider.guests ?? [];
     final scannedGuests = guestProvider.scannedGuests;
-    final totalGuests = widget.event.totalGuests;
+    final totalGuests = widget.event.totalGuests > 0 ? widget.event.totalGuests : allGuests.length;
     final attendanceRate = totalGuests > 0 ? scannedGuests / totalGuests : 0;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerBg = isDark ? AppColors.cardBackground : Colors.white;
+    final textColor = isDark ? AppColors.white : AppColors.blue;
+    final subtextColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+    final statCardBg = isDark ? AppColors.blueLight.withValues(alpha: 0.5) : const Color(0xFFF8FAFC);
+    final borderColor = isDark ? AppColors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0);
 
     return Column(
       children: [
@@ -58,10 +66,10 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.cardBackground,
+            color: headerBg,
             border: Border(
               bottom: BorderSide(
-                color: AppColors.white.withValues(alpha: 0.08),
+                color: borderColor,
                 width: 1,
               ),
             ),
@@ -74,17 +82,17 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.white,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 14),
               Row(
                 children: [
-                  _buildStatCard('TOTAL INVITÉS', '$totalGuests', AppColors.white),
+                  _buildStatCard('TOTAL INVITÉS', '$totalGuests', textColor, statCardBg, borderColor, subtextColor),
                   const SizedBox(width: 10),
-                  _buildStatCard('PRÉSENTS', '$scannedGuests', AppColors.green),
+                  _buildStatCard('PRÉSENTS', '$scannedGuests', AppColors.green, statCardBg, borderColor, subtextColor),
                   const SizedBox(width: 10),
-                  _buildStatCard('TAUX DE SCAN', '${(attendanceRate * 100).toInt()}%', AppColors.orange),
+                  _buildStatCard('TAUX DE SCAN', '${(attendanceRate * 100).toInt()}%', AppColors.orange, statCardBg, borderColor, subtextColor),
                 ],
               ),
             ],
@@ -95,15 +103,29 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: TextField(
-            style: GoogleFonts.plusJakartaSans(color: AppColors.white),
+            style: GoogleFonts.plusJakartaSans(color: textColor),
             decoration: InputDecoration(
               hintText: 'Rechercher un invité par nom ou email...',
               hintStyle: GoogleFonts.plusJakartaSans(
-                color: AppColors.grey,
+                color: subtextColor,
                 fontSize: 14,
               ),
               prefixIcon: const Icon(Icons.search_rounded, color: AppColors.orange),
+              filled: true,
+              fillColor: isDark ? AppColors.greyBackground : Colors.white,
               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: isDark ? AppColors.greyLight : const Color(0xFFCBD5E1)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: isDark ? AppColors.greyLight : const Color(0xFFCBD5E1)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: AppColors.orange, width: 2),
+              ),
             ),
             onChanged: (value) => setState(() => _searchQuery = value),
           ),
@@ -140,15 +162,22 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color valueColor) {
+  Widget _buildStatCard(
+    String label, 
+    String value, 
+    Color valueColor, 
+    Color cardBg, 
+    Color borderCol, 
+    Color labelCol,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: AppColors.blueLight.withValues(alpha: 0.5),
+          color: cardBg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.white.withValues(alpha: 0.08),
+            color: borderCol,
           ),
         ),
         child: Column(
@@ -158,7 +187,7 @@ class _GuestsListPageContentState extends State<GuestsListPageContent> {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
-                color: AppColors.grey,
+                color: labelCol,
                 letterSpacing: 0.5,
               ),
             ),

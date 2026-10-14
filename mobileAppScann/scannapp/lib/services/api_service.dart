@@ -17,7 +17,8 @@ class ApiService {
     }
 
     if (kIsWeb) return 'http://localhost:3000/api';
-    if (Platform.isAndroid) return 'http://10.0.2.2:3000/api';
+    // Sur Android avec 'adb reverse tcp:3000 tcp:3000' (ou émulateur configuré), localhost:3000 redirige vers le PC
+    if (Platform.isAndroid) return 'http://192.168.43.250:3000/api';
     if (Platform.isIOS) return 'http://localhost:3000/api';
 
     // Fallback to localhost for other platforms (desktop/emulator)
@@ -189,7 +190,8 @@ class ApiService {
   }
 
   // ✅ Connexion Google avec vérification préalable en base de données
-  static Future<Map<String, dynamic>> googleLogin(String token, {String? email, bool requireExisting = true}) async {
+  static Future<Map<String, dynamic>> googleLogin(String token,
+      {String? email, bool requireExisting = true}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/google'),
       headers: {'Content-Type': 'application/json'},
@@ -203,22 +205,16 @@ class ApiService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
-    _checkResponse(response, fallback: 'Aucun compte associé à cette adresse Google n\'a été trouvé.');
+    _checkResponse(response,
+        fallback:
+            'Aucun compte associé à cette adresse Google n\'a été trouvé.');
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  // ✅ Vérification accès événement
+  // ✅ Vérification accès événement (délègue à connectToEventByCode)
   static Future<Map<String, dynamic>> verifyEventAccess(
       String eventId, String code) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/events/$eventId/verify'),
-      headers: _headers,
-      body: jsonEncode({'accessCode': code}),
-    );
-
-    _checkResponse(response,
-        fallback: 'Erreur lors de la vérification de l\'accès');
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    return connectToEventByCode(code);
   }
 
   // ✅ Connexion à un événement via code (utilise /event/connect)
@@ -253,22 +249,26 @@ class ApiService {
 
   // ✅ Récupération de l'événement assigné à l'agent connecté
   static Future<EventModel?> getMyAgentEvent() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/agent/my-event'),
-        headers: _headers,
-      );
+    final response = await http.get(
+      Uri.parse('$baseUrl/agent/my-event'),
+      headers: _headers,
+    );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        if (data['event'] != null) {
-          return EventModel.fromJson(data['event'] as Map<String, dynamic>);
-        }
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (data['event'] != null) {
+        return EventModel.fromJson(data['event'] as Map<String, dynamic>);
       }
-    } catch (e) {
-      debugPrint('Erreur getMyAgentEvent: $e');
+      return null;
+    } else if (response.statusCode == 404) {
+      // Pas d'événement assigné — cas légitime
+      debugPrint('getMyAgentEvent: aucun événement assigné (404)');
+      return null;
+    } else {
+      _checkResponse(response,
+          fallback: 'Erreur lors de la récupération de l\'événement agent');
+      return null;
     }
-    return null;
   }
 
   // ✅ Récupération d'un événement unique par son ID

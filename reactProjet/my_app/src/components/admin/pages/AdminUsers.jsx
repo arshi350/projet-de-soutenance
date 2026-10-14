@@ -10,9 +10,14 @@ import {
   Edit3, 
   ShieldCheck, 
   Award, 
-  Ban 
+  Ban,
+  Trash2,
+  AlertTriangle,
+  X,
+  Loader2
 } from 'lucide-react';
 import { useGetAllUsers } from '../../../hooks/useUsers';
+import { deleteUser } from '../../../services/userService';
 
 const AdminUsers = () => {
   // Récupération des utilisateurs depuis l'API
@@ -25,6 +30,8 @@ const AdminUsers = () => {
 
   const [currentFilter, setCurrentFilter] = useState("Tous");
   const [selectedUserId, setSelectedUserId] = useState(null); // Aucun utilisateur sélectionné par défaut
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const mappedUsers = (fetchedUsers || []).map((user) => {
@@ -126,6 +133,25 @@ const AdminUsers = () => {
       if (refetch) refetch();
     } catch (err) {
       alert(err.message || 'Erreur lors de la modification de suspension');
+    }
+  };
+
+  const handleConfirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteUser(userToDelete.id, token);
+      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+      if (selectedUserId === userToDelete.id) {
+        setSelectedUserId(null);
+      }
+      setUserToDelete(null);
+      alert('Utilisateur et toutes ses données associées ont été définitivement supprimés de la base de données.');
+      if (refetch) refetch();
+    } catch (err) {
+      alert(err.message || "Erreur lors de la suppression définitive de l'utilisateur");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -273,14 +299,24 @@ const AdminUsers = () => {
                           {user.lastLogin}
                         </td>
 
-                        {/* Eye Icon to Toggle Details */}
+                        {/* Actions (View + Delete) */}
                         <td className="px-6 py-3.5 text-center" onClick={(e) => e.stopPropagation()}>
-                          <button 
-                            onClick={() => setSelectedUserId(selectedUserId === user.id ? null : user.id)}
-                            className="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-slate-600 transition-colors"
-                          >
-                            {selectedUserId === user.id ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button 
+                              onClick={() => setSelectedUserId(selectedUserId === user.id ? null : user.id)}
+                              className="p-1.5 hover:bg-gray-200 rounded-full text-gray-400 hover:text-slate-600 transition-colors"
+                              title="Afficher les détails"
+                            >
+                              {selectedUserId === user.id ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                            <button 
+                              onClick={() => setUserToDelete(user)}
+                              className="p-1.5 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-600 transition-colors"
+                              title="Supprimer définitivement cet utilisateur"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -404,15 +440,95 @@ const AdminUsers = () => {
             <button 
               onClick={() => handleSuspendUser(selectedUser.id)}
               disabled={selectedUser.status === 'Suspendu'}
-              className="w-full flex items-center justify-center gap-2 border border-red-200 hover:bg-red-50 text-red-600 font-bold py-2.5 rounded-xl text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 border border-red-200 hover:bg-red-50 text-red-600 font-bold py-2.5 rounded-xl text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Ban size={14} /> Suspendre le compte
+            </button>
+
+            <button 
+              onClick={() => setUserToDelete(selectedUser)}
+              className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition-colors shadow-sm cursor-pointer"
+            >
+              <Trash2 size={14} /> Supprimer définitivement de la base
             </button>
           </div>
 
         </div>
         )}
       </div>
+
+      {/* --- MODALE DE CONFIRMATION DE SUPPRESSION DÉFINITIVE --- */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden font-sans text-gray-900 text-left">
+            <div className="h-1.5 w-full bg-red-600" />
+            
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center">
+                  <AlertTriangle size={24} />
+                </div>
+                <button
+                  onClick={() => setUserToDelete(null)}
+                  disabled={isDeleting}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <h3 className="text-lg font-black text-gray-900 tracking-tight">
+                Supprimer définitivement l'utilisateur ?
+              </h3>
+              
+              <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                Vous êtes sur le point de supprimer le compte de <strong className="text-gray-900">{userToDelete.name}</strong> ({userToDelete.email}).
+              </p>
+
+              <div className="mt-4 p-3.5 bg-red-50/70 border border-red-200/80 rounded-2xl text-xs text-red-800 space-y-1.5">
+                <div className="font-bold flex items-center gap-1.5 text-red-900">
+                  <AlertTriangle size={14} /> Action irréversible :
+                </div>
+                <ul className="list-disc list-inside text-[11px] text-red-700 space-y-1">
+                  <li>Le compte utilisateur sera détruit.</li>
+                  <li>Tous ses <strong>événements créés</strong> ({userToDelete.eventsCount || 0}) seront supprimés.</li>
+                  <li>Tous les <strong>invités, QR codes et billets</strong> seront purgés.</li>
+                  <li>Tous les <strong>agents de scan</strong> associés seront supprimés.</li>
+                </ul>
+              </div>
+
+              <div className="mt-6 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setUserToDelete(null)}
+                  disabled={isDeleting}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition cursor-pointer disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteUser}
+                  disabled={isDeleting}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 shadow-md shadow-red-500/20 transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Suppression en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={14} />
+                      <span>Confirmer la suppression</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

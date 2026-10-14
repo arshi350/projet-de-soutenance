@@ -32,4 +32,39 @@ class AppColors {
 
   // Spécifiques scan
   static const cameraBackground = Color(0xFF080F1A);
-}
+
+  // Méthodes d'adaptation dynamique Clair / Sombre
+  static bool isDarkMode(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color getBg(BuildContext context) =>
+      isDarkMode(context) ? background : const Color(0xFFF4F6F9);
+
+  static Color getCardBg(BuildContext context) =>
+      isDarkMode(context) ? cardBackground : Colors.white;
+
+  static Color getTextPrimary(BuildContext context) =>
+      isDarkMode(context) ? white : blue;
+
+  static Color getTextSecondary(BuildContext context) =>
+      isDarkMode(context) ? grey : const Color(0xFF64748B);
+
+  static Color getBorder(BuildContext context) =>
+      isDarkMode(context)
+          ? white.withValues(alpha: 0.1)
+          : const Color(0xFFE2E8F0);
+
+  static Color getSubtleBg(BuildContext context) =>
+      isDarkMode(context) ? surfaceDark : const Color(0xFFF1F5F9);
+}
+
+extension AppThemeContext on BuildContext {
+  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+  Color get bg => AppColors.getBg(this);
+  Color get cardBg => AppColors.getCardBg(this);
+  Color get textPrimary => AppColors.getTextPrimary(this);
+  Color get textSecondary => AppColors.getTextSecondary(this);
+  Color get borderColor => AppColors.getBorder(this);
+  Color get subtleBg => AppColors.getSubtleBg(this);
+}
+

@@ -173,16 +173,20 @@ const verifyQRCode = async ({ qrData, eventId, scannerUserId }) => {
         throw error;
     }
 
+    const scanDate = new Date();
+    const formattedScanTime = `${scanDate.getHours().toString().padStart(2, '0')}:${scanDate.getMinutes().toString().padStart(2, '0')}`;
+
     if (invite) {
         invite.isScanned = true;
         invite.isPresent = true;
+        invite.scannedAt = scanDate;
         await invite.save();
     }
 
     if (invitation) {
         invitation.isScanned = true;
         invitation.isPresent = true;
-        invitation.scannedAt = new Date();
+        invitation.scannedAt = scanDate;
         await invitation.save();
     }
 
@@ -209,13 +213,17 @@ const verifyQRCode = async ({ qrData, eventId, scannerUserId }) => {
         isPublicTicket: false,
         guest: {
             _id: invite?._id || invitation?.inviteId,
+            id: invite?._id || invitation?.inviteId,
             nom: invite?.nom || invitation?.nom,
             prenom: invite?.prenom || invitation?.prenom,
             email: invite?.email || invitation?.inviteeEmail,
             telephone: invite?.telephone || invitation?.invitePhone,
-            status: invite?.status || invitation?.guestStatus,
+            guestCategory: invite?.status || invitation?.guestStatus || 'classique',
+            status: 'present',
             isScanned: true,
             isPresent: true,
+            scannedAt: scanDate.toISOString(),
+            scanTime: formattedScanTime,
             idEvent: eventId
         },
         scannedCount,

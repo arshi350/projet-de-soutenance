@@ -62,6 +62,10 @@ const inviteSchema = new mongoose.Schema({
     isPresent: {
         type: Boolean,
         default: false
+    },
+    scannedAt: {
+        type: Date,
+        default: null
     }
 }, 
 {

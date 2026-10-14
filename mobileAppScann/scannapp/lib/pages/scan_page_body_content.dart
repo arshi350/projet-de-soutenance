@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 import '../models/event_model.dart';
 import '../services/scan_service.dart';
+import '../providers/guest_provider.dart';
+import '../providers/scan_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/app_colors.dart';
 import 'scan_success_page.dart';
 import 'scan_failure_page.dart';
@@ -31,8 +35,10 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
   @override
   void initState() {
     super.initState();
+    final autoFlash = context.read<SettingsProvider>().autoFlashEnabled;
+    _isFlashOn = autoFlash;
     _scannerController = MobileScannerController(
-      torchEnabled: false,
+      torchEnabled: autoFlash,
       facing: CameraFacing.back,
     );
   }
@@ -95,11 +101,28 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
 
       if (!mounted) return;
       if (result.success && !result.alreadyScanned && result.guest != null) {
+        final String scanTime = _getFormattedTime();
         setState(() {
           _lastScanResult = 'valid';
           _lastScanName = result.guest!.fullName;
-          _lastScanTime = _getFormattedTime();
+          _lastScanTime = scanTime;
+          widget.event.scannedGuests++;
         });
+
+        // Mise à jour synchrone des providers
+        try {
+          final guestId = result.guest!.id;
+          context.read<GuestProvider>().updateGuestStatus(guestId, 'present', scanTime);
+          context.read<ScanProvider>().addScanResult(
+            success: true,
+            guestName: result.guest!.fullName,
+            guestId: guestId,
+          );
+          context.read<SettingsProvider>().triggerScanSuccessFeedback();
+        } catch (e) {
+          debugPrint('Erreur mise à jour provider scan body: $e');
+        }
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -110,6 +133,10 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
           ),
         );
       } else if (result.alreadyScanned && result.guest != null) {
+        try {
+          context.read<SettingsProvider>().triggerScanWarningFeedback();
+        } catch (_) {}
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -120,6 +147,10 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
           ),
         );
       } else {
+        try {
+          context.read<SettingsProvider>().triggerScanWarningFeedback();
+        } catch (_) {}
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => ScanFailurePage(event: widget.event)),
@@ -127,6 +158,10 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
       }
     } catch (e) {
       if (!mounted) return;
+      try {
+        context.read<SettingsProvider>().triggerScanWarningFeedback();
+      } catch (_) {}
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => ScanFailurePage(event: widget.event)),
@@ -144,11 +179,21 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
   }
 
   Widget _buildControlButton({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required bool isActive,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unselectedBg = isDark
+        ? AppColors.blueLight.withValues(alpha: 0.8)
+        : const Color(0xFFF1F5F9);
+    final unselectedBorder = isDark
+        ? AppColors.white.withValues(alpha: 0.15)
+        : const Color(0xFFE2E8F0);
+    final unselectedColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -158,12 +203,12 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
             decoration: BoxDecoration(
               color: isActive
                   ? AppColors.orange
-                  : AppColors.blueLight.withValues(alpha: 0.8),
+                  : unselectedBg,
               shape: BoxShape.circle,
               border: Border.all(
                 color: isActive
                     ? AppColors.orangeLight
-                    : AppColors.white.withValues(alpha: 0.15),
+                    : unselectedBorder,
               ),
               boxShadow: isActive
                   ? [
@@ -177,7 +222,7 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
             ),
             child: Icon(
               icon,
-              color: isActive ? AppColors.white : AppColors.grey,
+              color: isActive ? AppColors.white : unselectedColor,
               size: 22,
             ),
           ),
@@ -186,7 +231,7 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
             label,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 12,
-              color: isActive ? AppColors.orange : AppColors.grey,
+              color: isActive ? AppColors.orange : unselectedColor,
               fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
             ),
           ),
@@ -197,6 +242,16 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final panelBg = isDark ? AppColors.cardBackground : Colors.white;
+    final panelBorder = isDark
+        ? AppColors.white.withValues(alpha: 0.1)
+        : const Color(0xFFE2E8F0);
+    final shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.5)
+        : Colors.black.withValues(alpha: 0.08);
+    final textColor = isDark ? AppColors.white : AppColors.blue;
+
     final attendanceRate = widget.event.totalGuests > 0
         ? (widget.event.scannedGuests / widget.event.totalGuests).toDouble()
         : 0.0;
@@ -280,15 +335,15 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.cardBackground,
+              color: panelBg,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               border: Border.all(
-                color: AppColors.white.withValues(alpha: 0.1),
+                color: panelBorder,
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.5),
+                  color: shadowColor,
                   blurRadius: 25,
                   offset: const Offset(0, -8),
                 ),
@@ -317,7 +372,7 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.white,
+                            color: textColor,
                           ),
                         ),
                       ],
@@ -327,7 +382,9 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
                       borderRadius: BorderRadius.circular(10),
                       child: LinearProgressIndicator(
                         value: attendanceRate,
-                        backgroundColor: AppColors.greyLight.withValues(alpha: 0.3),
+                        backgroundColor: isDark
+                            ? AppColors.greyLight.withValues(alpha: 0.3)
+                            : const Color(0xFFE2E8F0),
                         color: AppColors.orange,
                         minHeight: 8,
                       ),
@@ -339,18 +396,21 @@ class _ScanPageBodyContentState extends State<ScanPageBodyContent> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildControlButton(
+                      context: context,
                       icon: Icons.flash_on_rounded,
                       label: 'Flash',
                       isActive: _isFlashOn,
                       onTap: _toggleFlash,
                     ),
                     _buildControlButton(
+                      context: context,
                       icon: Icons.volume_up_rounded,
                       label: 'Sons',
                       isActive: _isSoundOn,
                       onTap: _toggleSound,
                     ),
                     _buildControlButton(
+                      context: context,
                       icon: Icons.refresh_rounded,
                       label: 'Réinit.',
                       isActive: false,

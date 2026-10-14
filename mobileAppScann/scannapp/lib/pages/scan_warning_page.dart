@@ -23,12 +23,20 @@ class ScanWarningPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.background : const Color(0xFFF4F6F9);
+    final cardBg = isDark ? AppColors.cardBackground : Colors.white;
+    final textColor = isDark ? AppColors.white : AppColors.blue;
+    final subtextColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+    final borderColor = isDark ? AppColors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+    final dividerColor = isDark ? AppColors.greyLight : const Color(0xFFE2E8F0);
+
     final displayTime = scannedAt != null && scannedAt!.isNotEmpty 
         ? scannedAt! 
         : 'Précédemment enregistré';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Container(
           width: double.infinity,
@@ -68,22 +76,22 @@ class ScanWarningPage extends StatelessWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.white,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.cardBackground,
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.white.withValues(alpha: 0.1),
+                    color: borderColor,
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                       blurRadius: 15,
                       offset: const Offset(0, 4),
                     ),
@@ -91,11 +99,11 @@ class ScanWarningPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildInfoRow('Horodatage 1er Scan', displayTime),
-                    const Divider(height: 24, color: AppColors.greyLight),
-                    _buildInfoRow('Catégorie', guest.status.toUpperCase()),
-                    const Divider(height: 24, color: AppColors.greyLight),
-                    _buildInfoRow('Statut Entrée', 'Accès Déjà Validé'),
+                    _buildInfoRow('Horodatage 1er Scan', displayTime, textColor, subtextColor),
+                    Divider(height: 24, color: dividerColor),
+                    _buildInfoRow('Catégorie', guest.status.toUpperCase(), textColor, subtextColor),
+                    Divider(height: 24, color: dividerColor),
+                    _buildInfoRow('Statut Entrée', 'Accès Déjà Validé', textColor, subtextColor),
                   ],
                 ),
               ),
@@ -107,7 +115,7 @@ class ScanWarningPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
-                    color: AppColors.grey,
+                    color: subtextColor,
                     height: 1.4,
                   ),
                 ),
@@ -155,20 +163,20 @@ class ScanWarningPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value, Color textColor, Color subtextColor) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.grey),
+          style: GoogleFonts.plusJakartaSans(fontSize: 13, color: subtextColor),
         ),
         Text(
           value,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: AppColors.white,
+            color: textColor,
           ),
         ),
       ],

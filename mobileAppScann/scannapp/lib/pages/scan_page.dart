@@ -2,8 +2,12 @@
 import 'package:arshievent_scan/models/guest_model.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 import '../models/event_model.dart';
 import '../services/scan_service.dart';
+import '../providers/guest_provider.dart';
+import '../providers/scan_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'scan_success_page.dart';
@@ -33,8 +37,10 @@ class _ScanPageState extends State<ScanPage> {
   @override
   void initState() {
     super.initState();
+    final autoFlash = context.read<SettingsProvider>().autoFlashEnabled;
+    _isFlashOn = autoFlash;
     _scannerController = MobileScannerController(
-      torchEnabled: false,
+      torchEnabled: autoFlash,
       facing: CameraFacing.back,
     );
   }
@@ -103,11 +109,27 @@ class _ScanPageState extends State<ScanPage> {
       if (!mounted) return;
       if (result.success && !result.alreadyScanned && result.guest != null) {
         // Scan réussi (Privé ou Public)
+        final String scanTime = _getFormattedTime();
         setState(() {
           _lastScanResult = 'valid';
           _lastScanName = result.guest!.fullName;
-          _lastScanTime = _getFormattedTime();
+          _lastScanTime = scanTime;
+          widget.event.scannedGuests++;
         });
+
+        // Mise à jour synchrone de l'état des providers
+        try {
+          final guestId = result.guest!.id;
+          context.read<GuestProvider>().updateGuestStatus(guestId, 'present', scanTime);
+          context.read<ScanProvider>().addScanResult(
+            success: true,
+            guestName: result.guest!.fullName,
+            guestId: guestId,
+          );
+          context.read<SettingsProvider>().triggerScanSuccessFeedback();
+        } catch (e) {
+          debugPrint('Erreur mise à jour provider scan: $e');
+        }
 
         Navigator.pushReplacement(
           context,
@@ -120,6 +142,10 @@ class _ScanPageState extends State<ScanPage> {
         );
       } else if (result.alreadyScanned) {
         // QR déjà scanné (HTTP 409 Conflict)
+        try {
+          context.read<SettingsProvider>().triggerScanWarningFeedback();
+        } catch (_) {}
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -142,6 +168,10 @@ class _ScanPageState extends State<ScanPage> {
         );
       } else {
         // QR invalide ou révoqué
+        try {
+          context.read<SettingsProvider>().triggerScanWarningFeedback();
+        } catch (_) {}
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -151,6 +181,10 @@ class _ScanPageState extends State<ScanPage> {
       }
     } catch (e) {
       if (!mounted) return;
+      try {
+        context.read<SettingsProvider>().triggerScanWarningFeedback();
+      } catch (_) {}
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -270,57 +304,65 @@ class _ScanPageState extends State<ScanPage> {
             bottom: 0,
             left: 0,
             right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.black.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // === PROGRESSION ===
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Progression des entrées',
-                            style:
-                                TextStyle(fontSize: 12, color: AppColors.grey),
-                          ),
-                          Text(
-                            '${widget.event.scannedGuests} / ${widget.event.totalGuests} (${(attendanceRate * 100).toInt()}%)',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.black,
+            child: Builder(builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final panelBg = isDark ? AppColors.cardBackground : Colors.white;
+              final textColor = isDark ? AppColors.white : AppColors.blue;
+              final subtextColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+              final borderColor = isDark ? AppColors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+
+              return Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: panelBg,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border.all(color: borderColor),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark ? AppColors.black.withValues(alpha: 0.4) : AppColors.black.withValues(alpha: 0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // === PROGRESSION ===
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Progression des entrées',
+                              style:
+                                  TextStyle(fontSize: 12, color: subtextColor),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: attendanceRate,
-                          backgroundColor: AppColors.greyLight,
-                          color: AppColors.orange,
-                          minHeight: 8,
+                            Text(
+                              '${widget.event.scannedGuests} / ${widget.event.totalGuests} (${(attendanceRate * 100).toInt()}%)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            value: attendanceRate,
+                            backgroundColor: isDark ? AppColors.greyLight : const Color(0xFFE2E8F0),
+                            color: AppColors.orange,
+                            minHeight: 8,
+                          ),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 24),
 
                   // === BOUTONS DE CONTRÔLE (Flash, Sons, Réinit.) ===
@@ -404,8 +446,9 @@ class _ScanPageState extends State<ScanPage> {
                       ),
                     ),
                 ],
-              ),
-            ),
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -431,33 +474,40 @@ class _ScanPageState extends State<ScanPage> {
     required bool isActive,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isActive ? AppColors.orange : AppColors.greyBackground,
-              shape: BoxShape.circle,
+    return Builder(builder: (context) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final unselectedBg = isDark ? AppColors.greyBackground : const Color(0xFFF1F5F9);
+      final unselectedColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+
+      return GestureDetector(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.orange : unselectedBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: isActive ? AppColors.white : unselectedColor,
+                size: 22,
+              ),
             ),
-            child: Icon(
-              icon,
-              color: isActive ? AppColors.white : AppColors.grey,
-              size: 22,
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: isActive ? AppColors.orange : unselectedColor,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: isActive ? AppColors.orange : AppColors.grey,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 }
+

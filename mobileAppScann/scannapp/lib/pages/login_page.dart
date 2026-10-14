@@ -170,9 +170,16 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.cardBackground : Colors.white;
+    final textColor = isDark ? AppColors.white : AppColors.blue;
+    final subtextColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+    final borderColor = isDark
+        ? AppColors.white.withValues(alpha: 0.1)
+        : const Color(0xFFE2E8F0);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.background : const Color(0xFFF4F6F9),
       body: Stack(
         children: [
           Positioned(
@@ -206,7 +213,7 @@ class _LoginPageState extends State<LoginPage> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: AppColors.cardBackground,
+                        color: cardBg,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: AppColors.orange.withValues(alpha: 0.5),
@@ -235,7 +242,7 @@ class _LoginPageState extends State<LoginPage> {
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 2,
-                        color: AppColors.white,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -243,22 +250,22 @@ class _LoginPageState extends State<LoginPage> {
                       'Connexion au Portail de Contrôle',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
-                        color: AppColors.grey,
+                        color: subtextColor,
                       ),
                     ),
                     const SizedBox(height: 36),
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBackground,
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: AppColors.white.withValues(alpha: 0.1),
+                          color: borderColor,
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
+                            color: isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.06),
                             blurRadius: 20,
                             offset: const Offset(0, 4),
                           ),
@@ -271,10 +278,11 @@ class _LoginPageState extends State<LoginPage> {
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              style: const TextStyle(color: AppColors.white),
-                              decoration: const InputDecoration(
+                              style: TextStyle(color: textColor),
+                              decoration: InputDecoration(
                                 labelText: 'Adresse email',
-                                prefixIcon: Icon(Icons.email_outlined, color: AppColors.grey),
+                                labelStyle: TextStyle(color: subtextColor),
+                                prefixIcon: Icon(Icons.email_outlined, color: subtextColor),
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
@@ -290,10 +298,11 @@ class _LoginPageState extends State<LoginPage> {
                             TextFormField(
                               controller: _passwordController,
                               obscureText: true,
-                              style: const TextStyle(color: AppColors.white),
-                              decoration: const InputDecoration(
+                              style: TextStyle(color: textColor),
+                              decoration: InputDecoration(
                                 labelText: 'Mot de passe',
-                                prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.grey),
+                                labelStyle: TextStyle(color: subtextColor),
+                                prefixIcon: Icon(Icons.lock_outline_rounded, color: subtextColor),
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
@@ -378,7 +387,7 @@ class _LoginPageState extends State<LoginPage> {
                                 Expanded(
                                   child: Container(
                                     height: 1,
-                                    color: AppColors.white.withValues(alpha: 0.1),
+                                    color: isDark ? AppColors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
                                   ),
                                 ),
                                 Padding(
@@ -386,7 +395,7 @@ class _LoginPageState extends State<LoginPage> {
                                   child: Text(
                                     'OU CONNECTEZ-VOUS AVEC',
                                     style: GoogleFonts.plusJakartaSans(
-                                      color: AppColors.grey,
+                                      color: subtextColor,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 0.8,
@@ -396,7 +405,7 @@ class _LoginPageState extends State<LoginPage> {
                                 Expanded(
                                   child: Container(
                                     height: 1,
-                                    color: AppColors.white.withValues(alpha: 0.1),
+                                    color: isDark ? AppColors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
                                   ),
                                 ),
                               ],
@@ -408,10 +417,10 @@ class _LoginPageState extends State<LoginPage> {
                               child: OutlinedButton(
                                 onPressed: authProvider.isLoading ? null : _handleGoogleSignIn,
                                 style: OutlinedButton.styleFrom(
-                                  backgroundColor: AppColors.cardBackground,
-                                  foregroundColor: AppColors.white,
+                                  backgroundColor: cardBg,
+                                  foregroundColor: textColor,
                                   side: BorderSide(
-                                    color: AppColors.white.withValues(alpha: 0.15),
+                                    color: isDark ? AppColors.white.withValues(alpha: 0.15) : const Color(0xFFCBD5E1),
                                     width: 1,
                                   ),
                                   shape: RoundedRectangleBorder(
@@ -439,7 +448,7 @@ class _LoginPageState extends State<LoginPage> {
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.white,
+                                        color: textColor,
                                       ),
                                     ),
                                   ],

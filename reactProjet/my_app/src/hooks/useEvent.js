@@ -154,18 +154,13 @@ export const useGetRecentEvents = (userId, token, limit = 5, autoFetch = true) =
   return { recentEvents, loading, error, refetch: fetchRecentEvents };
 };
 
-//HOOK POUR RÉCUPÉRER LES ÉVÉNEMENTS RÉCENTS de la bd
-export const useGetRecentEvent = (token, autoFetch = true) => {
+//HOOK POUR RÉCUPÉRER LES ÉVÉNEMENTS RÉCENTS de la bd (public / vitrine)
+export const useGetRecentEvent = (token = null, autoFetch = true) => {
   const [recentEvent, setRecentEvent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchRecentEvent = useCallback(async () => {
-    if (!token) {
-      setError('Utilisateur non authentifié');
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -181,10 +176,10 @@ export const useGetRecentEvent = (token, autoFetch = true) => {
   }, [token]);
 
   useEffect(() => {
-    if (autoFetch && token) {
+    if (autoFetch) {
       fetchRecentEvent();
     }
-  }, [autoFetch, token, fetchRecentEvent]);
+  }, [autoFetch, fetchRecentEvent]);
 
   return { recentEvent, loading, error, refetch: fetchRecentEvent };
 };

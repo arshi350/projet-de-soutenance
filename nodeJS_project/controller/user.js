@@ -2,6 +2,7 @@
 // Importation du modèle utilisateur
 const{ userModel} = require("../models/user")
 const bcrypt = require("bcrypt")
+const { deleteUserCascade } = require("../services/cascadeDeleteService")
 
 // ajouter un nouvel utilisateur
 const addUser = async (req, res) =>{
@@ -189,15 +190,37 @@ const unsuspendUser = async (req, res) => {
     }
 }
 
-//supprimer un utilisateur specifique
+//supprimer un utilisateur specifique avec suppression en cascade de toutes ses données
 const deleteUser = async (req, res)=>{
     try {
-        const id = req.params.id
-        const user = await userModel.deleteOne({_id:id})
-        return res.status(200).json({message:"utilisateur supprimer avec succes", user})
+        const id = req.params.id;
+
+        // Protection : Vérifier les permissions
+        const requesterRole = req.user?.role;
+        const requesterId = req.userId || req.user?.id || req.user?._id;
+
+        if (requesterRole !== 'admin' && String(requesterId) !== String(id)) {
+            return res.status(403).json({ message: "Action non autorisée. Seul un administrateur peut supprimer un compte." });
+        }
+
+        // Empêcher l'administrateur de supprimer son propre compte connecté par mégarde
+        if (String(requesterId) === String(id) && requesterRole === 'admin') {
+            return res.status(400).json({ message: "Vous ne pouvez pas supprimer votre propre compte administrateur actuellement connecté." });
+        }
+
+        const cascadeResult = await deleteUserCascade(id);
+        if (!cascadeResult.success && cascadeResult.notFound) {
+            return res.status(404).json({ message: "Utilisateur non trouvé" });
+        }
+
+        return res.status(200).json({
+            message: "Utilisateur et toutes ses données associées supprimés définitivement avec succès",
+            result: cascadeResult
+        });
 
     } catch (error) {
-        return res.status(500).json({message:"erreur lors de la suppression"})
+        console.error("Erreur lors de la suppression en cascade de l'utilisateur:", error);
+        return res.status(500).json({ message: "Erreur lors de la suppression de l'utilisateur", error: error.message });
     }
 }
 

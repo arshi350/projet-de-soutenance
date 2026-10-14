@@ -122,6 +122,7 @@ eventRouter.route("/getRecentEventsByUser/:id").get( getRecentEventsByUser)
  *         description: Liste des événements récents
  */
 eventRouter.route("/getRecentvents").get(getRecentvents)
+eventRouter.route("/getRecentEvents").get(getRecentvents)
 
 /**
  * @swagger

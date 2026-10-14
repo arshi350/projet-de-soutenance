@@ -49,26 +49,46 @@ class GuestModel {
     return combined.isNotEmpty ? combined.toUpperCase() : '?';
   }
 
+  static String? _formatScanTime(dynamic rawTime) {
+    if (rawTime == null) return null;
+    final str = rawTime.toString();
+    if (str.isEmpty) return null;
+    if (str.length <= 5 && str.contains(':')) return str;
+    try {
+      final dt = DateTime.parse(str).toLocal();
+      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return str;
+    }
+  }
+
   factory GuestModel.fromJson(Map<String, dynamic> json) {
+    final bool isPresentOrScanned = json['isPresent'] == true ||
+        json['isScanned'] == true ||
+        json['status'] == 'present';
+
+    final String resolvedStatus = isPresentOrScanned ? 'present' : 'pending';
+
+    final dynamic rawScanTime = json['scanTime'] ??
+        json['scannedAt'] ??
+        (isPresentOrScanned ? json['updatedAt'] : null);
+
+    final bool isVipGuest = json['isVip'] == true ||
+        json['vip'] == true ||
+        (json['status']?.toString().toLowerCase() == 'vip') ||
+        (json['guestCategory']?.toString().toLowerCase() == 'vip');
+
     return GuestModel(
-      id: json['id'] ?? json['_id'] ?? '',
-      firstName:
-          json['firstName'] ??
-          json['prenom'] ??
-          json['nom'] ??
-          '',
-      lastName:
-          json['lastName'] ??
-          (json['prenom'] != null ? json['nom'] ?? '' : ''),
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? json['telephone'],
-      status:
-          json['status'] ??
-          (json['isPresent'] == true ? 'present' : 'pending'),
-      scanTime: json['scanTime'] ?? json['scannedAt'],
-      isVip: json['isVip'] ?? json['vip'] ?? false,
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      firstName: json['firstName'] ?? json['prenom'] ?? json['nom'] ?? '',
+      lastName: json['lastName'] ?? (json['prenom'] != null ? json['nom'] ?? '' : ''),
+      email: json['email'] ?? json['inviteeEmail'] ?? '',
+      phone: json['phone'] ?? json['telephone'] ?? json['invitePhone'],
+      status: resolvedStatus,
+      scanTime: _formatScanTime(rawScanTime),
+      isVip: isVipGuest,
       qrCode: json['qrCode'],
-      idEvent: json['idEvent'] ?? json['eventId'],
+      idEvent: (json['idEvent'] ?? json['eventId'])?.toString(),
     );
   }
 

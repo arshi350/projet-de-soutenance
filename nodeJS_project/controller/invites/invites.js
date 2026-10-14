@@ -25,7 +25,7 @@ const addInvite = async (req, res) => {
         const invitePayload = {
             nom: nom.trim(),
             prenom: prenom.trim(),
-            status: status || 'classique',
+            status: (status || 'classique').toString().toLowerCase().trim(),
             idEvent: new mongoose.Types.ObjectId(idEvent)
         };
 
@@ -76,9 +76,30 @@ const getInvitesByEvent = async (req, res) => {
         }
 
         const invites = await Invites.find({ idEvent: eventId }).sort({ createdAt: -1 });
+        const formattedInvites = invites.map(inv => {
+            const obj = inv.toObject ? inv.toObject() : { ...inv };
+            const isScanned = obj.isScanned === true;
+            const isPresent = obj.isPresent === true;
+            const scanDate = obj.scannedAt || (isScanned ? obj.updatedAt : null);
+            const category = (obj.status || 'classique').toLowerCase();
+            
+            return {
+                ...obj,
+                isScanned,
+                isPresent,
+                status: category,
+                guestCategory: category,
+                attendanceStatus: isPresent || isScanned ? 'present' : 'pending',
+                scannedAt: scanDate ? new Date(scanDate).toISOString() : null,
+                scanTime: scanDate 
+                    ? `${new Date(scanDate).getHours().toString().padStart(2, '0')}:${new Date(scanDate).getMinutes().toString().padStart(2, '0')}`
+                    : null
+            };
+        });
+
         return res.status(200).json({
-            count: invites.length,
-            invites
+            count: formattedInvites.length,
+            invites: formattedInvites
         });
     } catch (error) {
         console.error("Erreur getInvitesByEvent:", error);
@@ -122,7 +143,13 @@ const updateInvite = async (req, res) => {
         const updateData = {};
         if (nom) updateData.nom = nom.trim();
         if (prenom) updateData.prenom = prenom.trim();
-        if (status) updateData.status = status;
+        if (status) {
+            updateData.status = status.toString().toLowerCase().trim();
+            try {
+                const { invitationModel } = require('../../models/invitation/invitation');
+                await invitationModel.updateMany({ inviteId }, { guestStatus: updateData.status });
+            } catch (invSyncErr) {}
+        }
         if (email !== undefined) {
             updateData.email = email ? email.trim().toLowerCase() : undefined;
         }

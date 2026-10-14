@@ -1,9 +1,10 @@
-// lib/pages/scan_success_page.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../models/event_model.dart';
 import '../models/guest_model.dart';
+import '../providers/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/bottom_nav_bar.dart';
 import 'scan_page.dart';
@@ -19,22 +20,35 @@ class ScanSuccessPage extends StatefulWidget {
 }
 
 class _ScanSuccessPageState extends State<ScanSuccessPage> {
-  late Timer _timer;
+  Timer? _timer;
   int _countdown = 3;
+  bool _autoReturn = true;
 
   @override
   void initState() {
     super.initState();
-    _startAutoReturn();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _autoReturn = context.read<SettingsProvider>().autoReturnEnabled;
+      if (_autoReturn) {
+        _startAutoReturn();
+      } else {
+        setState(() {});
+      }
+    });
   }
 
   void _startAutoReturn() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       setState(() {
         if (_countdown > 1) {
           _countdown--;
         } else {
-          _timer.cancel();
+          _timer?.cancel();
           _goToNext();
         }
       });
@@ -42,6 +56,7 @@ class _ScanSuccessPageState extends State<ScanSuccessPage> {
   }
 
   void _goToNext() {
+    _timer?.cancel();
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => ScanPage(event: widget.event)),
@@ -51,14 +66,20 @@ class _ScanSuccessPageState extends State<ScanSuccessPage> {
 
   @override
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.cardBackground : Colors.white;
+    final textColor = isDark ? AppColors.white : AppColors.blue;
+    final borderColor = isDark ? AppColors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+    final dividerColor = isDark ? AppColors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.background : const Color(0xFFF4F6F9),
       body: SafeArea(
         child: Container(
           width: double.infinity,
@@ -99,22 +120,22 @@ class _ScanSuccessPageState extends State<ScanSuccessPage> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.white,
+                  color: textColor,
                 ),
               ),
               const SizedBox(height: 28),
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.cardBackground,
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: AppColors.white.withValues(alpha: 0.1),
+                    color: borderColor,
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: isDark ? Colors.black.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.06),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
                     ),
@@ -124,16 +145,16 @@ class _ScanSuccessPageState extends State<ScanSuccessPage> {
                   children: [
                     _buildInfoRow('Statut Entrée', 'Présent', AppColors.green),
                     const SizedBox(height: 14),
-                    Container(height: 1, color: AppColors.white.withValues(alpha: 0.08)),
+                    Container(height: 1, color: dividerColor),
                     const SizedBox(height: 14),
-                    _buildInfoRow('Événement', widget.event.name, AppColors.white),
+                    _buildInfoRow('Événement', widget.event.name, textColor),
                     const SizedBox(height: 14),
-                    Container(height: 1, color: AppColors.white.withValues(alpha: 0.08)),
+                    Container(height: 1, color: dividerColor),
                     const SizedBox(height: 14),
                     _buildInfoRow(
                       'Catégorie',
                       widget.guest.isVip ? 'VIP Exclusif' : 'Standard',
-                      widget.guest.isVip ? AppColors.gold : AppColors.grey,
+                      widget.guest.isVip ? AppColors.gold : (isDark ? AppColors.grey : const Color(0xFF64748B)),
                     ),
                   ],
                 ),
@@ -164,21 +185,28 @@ class _ScanSuccessPageState extends State<ScanSuccessPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text(
-                'Retour automatique dans $_countdown s',
-                style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.grey),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildTimerDot(_countdown <= 3),
-                  const SizedBox(width: 6),
-                  _buildTimerDot(_countdown <= 2),
-                  const SizedBox(width: 6),
-                  _buildTimerDot(_countdown <= 1),
-                ],
-              ),
+              if (_autoReturn) ...[
+                Text(
+                  'Retour automatique dans $_countdown s',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.grey),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildTimerDot(_countdown <= 3),
+                    const SizedBox(width: 6),
+                    _buildTimerDot(_countdown <= 2),
+                    const SizedBox(width: 6),
+                    _buildTimerDot(_countdown <= 1),
+                  ],
+                ),
+              ] else ...[
+                Text(
+                  'Appuyez sur le bouton pour scanner le billet suivant',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.grey),
+                ),
+              ],
             ],
           ),
         ),

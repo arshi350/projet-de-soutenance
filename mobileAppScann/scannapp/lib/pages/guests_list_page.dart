@@ -45,11 +45,20 @@ class _GuestsListPageState extends State<GuestsListPage> {
   @override
   Widget build(BuildContext context) {
     final guestProvider = Provider.of<GuestProvider>(context);
+    final allGuests = guestProvider.guests ?? [];
     final scannedGuests = guestProvider.scannedGuests;
-    final totalGuests = widget.event.totalGuests;
+    final totalGuests = widget.event.totalGuests > 0 ? widget.event.totalGuests : allGuests.length;
     final attendanceRate = totalGuests > 0 ? scannedGuests / totalGuests : 0;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerBg = isDark ? AppColors.cardBackground : Colors.white;
+    final textColor = isDark ? AppColors.white : AppColors.blue;
+    final subtextColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+    final statCardBg = isDark ? AppColors.blueLight.withValues(alpha: 0.5) : const Color(0xFFF8FAFC);
+    final borderColor = isDark ? AppColors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0);
+
     return Scaffold(
+      backgroundColor: isDark ? AppColors.background : const Color(0xFFF4F6F9),
       appBar: const CustomAppBar(
         title: 'Invités scannés',
         showBackButton: true,
@@ -59,26 +68,35 @@ class _GuestsListPageState extends State<GuestsListPage> {
           // En-tête événement
           Container(
             padding: const EdgeInsets.all(16),
-            color: AppColors.white,
+            decoration: BoxDecoration(
+              color: headerBg,
+              border: Border(
+                bottom: BorderSide(
+                  color: borderColor,
+                  width: 1,
+                ),
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   widget.event.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: textColor,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    _buildStatCard('TOTAL', '$totalGuests'),
+                    _buildStatCard('TOTAL', '$totalGuests', statCardBg, subtextColor, textColor, borderColor),
                     const SizedBox(width: 12),
-                    _buildStatCard('PRÉSENTS', '$scannedGuests'),
+                    _buildStatCard('PRÉSENTS', '$scannedGuests', statCardBg, subtextColor, AppColors.green, borderColor),
                     const SizedBox(width: 12),
                     _buildStatCard(
-                        'TAUX', '${(attendanceRate * 100).toInt()}%'),
+                        'TAUX', '${(attendanceRate * 100).toInt()}%', statCardBg, subtextColor, AppColors.orange, borderColor),
                   ],
                 ),
               ],
@@ -89,15 +107,25 @@ class _GuestsListPageState extends State<GuestsListPage> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
+              style: TextStyle(color: textColor),
               decoration: InputDecoration(
                 hintText: 'Rechercher un invité...',
-                prefixIcon: const Icon(Icons.search),
+                hintStyle: TextStyle(color: subtextColor),
+                prefixIcon: const Icon(Icons.search, color: AppColors.orange),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: const BorderSide(color: AppColors.orange, width: 2),
                 ),
                 filled: true,
-                fillColor: AppColors.greyBackground,
+                fillColor: isDark ? AppColors.greyBackground : Colors.white,
               ),
               onChanged: (value) => setState(() => _searchQuery = value),
             ),
@@ -105,10 +133,15 @@ class _GuestsListPageState extends State<GuestsListPage> {
 
           // Liste des invités
           if (guestProvider.isLoading)
-            const Expanded(child: Center(child: CircularProgressIndicator())),
+            const Expanded(child: Center(child: CircularProgressIndicator(color: AppColors.orange))),
           if (guestProvider.error != null)
             Expanded(
-              child: Center(child: Text('Erreur: ${guestProvider.error}')),
+              child: Center(
+                child: Text(
+                  'Erreur: ${guestProvider.error}',
+                  style: const TextStyle(color: AppColors.red),
+                ),
+              ),
             ),
           if (!guestProvider.isLoading && guestProvider.guests != null)
             Expanded(
@@ -131,24 +164,25 @@ class _GuestsListPageState extends State<GuestsListPage> {
     );
   }
 
-  Widget _buildStatCard(String label, String value) {
+  Widget _buildStatCard(String label, String value, Color bgColor, Color labelColor, Color valueColor, Color borderCol) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.greyBackground,
+          color: bgColor,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderCol),
         ),
         child: Column(
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 11, color: AppColors.grey),
+              style: TextStyle(fontSize: 11, color: labelColor),
             ),
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: valueColor),
             ),
           ],
         ),

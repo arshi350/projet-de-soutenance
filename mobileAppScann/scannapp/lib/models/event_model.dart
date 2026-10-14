@@ -44,6 +44,14 @@ class EventModel {
     }
   }
 
+  /// Extracts a string ID from various formats (String, Map with _id, etc.)
+  static String _extractId(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value;
+    if (value is Map) return (value['_id'] ?? value['id'] ?? '').toString();
+    return value.toString();
+  }
+
   factory EventModel.fromJson(Map<String, dynamic> json) {
     // Extract date, handle both ISO 8601 and plain date formats
     String parsedDate =
@@ -54,13 +62,13 @@ class EventModel {
         json['time'] ?? json['heure'] ?? json['heureDebut'] ?? '';
 
     return EventModel(
-      id: json['id'] ?? json['_id'] ?? '',
+      id: _extractId(json['id'] ?? json['_id']),
       name: json['name'] ?? json['titre'] ?? json['nom'] ?? '',
       date: parsedDate,
       time: parsedTime,
       location: json['location'] ?? json['lieu'] ?? '',
       totalGuests: json['totalGuests'] ?? json['totalInvites'] ?? 0,
-      scannedGuests: json['scannedGuests'] ?? json['scanned'] ?? 0,
+      scannedGuests: json['scannedGuests'] ?? json['scanned'] ?? json['confirmedInvites'] ?? 0,
       accessCode: json['accessCode'] ?? json['EventCode'] ?? '',
       status: json['status'] ?? 'active',
       category: json['category'] ?? json['categorie'] ?? 'Événement',

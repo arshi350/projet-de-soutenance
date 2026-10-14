@@ -17,21 +17,32 @@ class GuestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.cardBackground : Colors.white;
+    final cardBorder = isDark
+        ? AppColors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE2E8F0);
+    final shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.2)
+        : Colors.black.withValues(alpha: 0.05);
+    final nameColor = isDark ? AppColors.white : AppColors.blue;
+    final emailColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
+          color: cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.white.withValues(alpha: 0.08),
+            color: cardBorder,
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: shadowColor,
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -47,13 +58,17 @@ class GuestCard extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: guest.isVip
                       ? [AppColors.gold, AppColors.orange]
-                      : [AppColors.blueLight, AppColors.surfaceDark],
+                      : (isDark
+                          ? [AppColors.blueLight, AppColors.surfaceDark]
+                          : [const Color(0xFFE2E8F0), const Color(0xFFCBD5E1)]),
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: (guest.isVip ? AppColors.gold : AppColors.blueLight)
+                    color: (guest.isVip
+                            ? AppColors.gold
+                            : (isDark ? AppColors.blueLight : Colors.black12))
                         .withValues(alpha: 0.3),
                     blurRadius: 8,
                   ),
@@ -65,7 +80,9 @@ class GuestCard extends StatelessWidget {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.white,
+                    color: (guest.isVip || isDark)
+                        ? AppColors.white
+                        : AppColors.blue,
                   ),
                 ),
               ),
@@ -83,7 +100,7 @@ class GuestCard extends StatelessWidget {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.white,
+                            color: nameColor,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -117,7 +134,7 @@ class GuestCard extends StatelessWidget {
                     guest.email,
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
-                      color: AppColors.grey,
+                      color: emailColor,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -129,7 +146,7 @@ class GuestCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (guest.scanTime != null) ...[
+                if (guest.isScanned || guest.isPresent || guest.scanTime != null) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
@@ -137,7 +154,7 @@ class GuestCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      guest.scanTime!,
+                      guest.scanTime ?? 'Présent',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -149,7 +166,9 @@ class GuestCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppColors.greyLight.withValues(alpha: 0.2),
+                      color: isDark
+                          ? AppColors.greyLight.withValues(alpha: 0.2)
+                          : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -157,7 +176,7 @@ class GuestCard extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.grey,
+                        color: emailColor,
                       ),
                     ),
                   ),

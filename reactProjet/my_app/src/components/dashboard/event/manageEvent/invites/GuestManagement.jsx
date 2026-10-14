@@ -184,11 +184,12 @@ export default function GuestManagement() {
   const handleEditInvite = (guest) => {
     setEditingGuest(guest);
     setDetailsGuest(null);
+    const cat = ((guest.status || guest.guestCategory || '').toLowerCase() === 'vip') ? 'vip' : 'classique';
     setEditForm({
       nom: guest.nom || '',
       prenom: guest.prenom || '',
       contact: guest.email || guest.telephone || '',
-      status: guest.status || 'classique'
+      status: cat
     });
   };
 
@@ -288,7 +289,10 @@ export default function GuestManagement() {
   };
 
   const getStatusLabel = (guest) => {
-    if (guest.status) return guest.status.toUpperCase();
+    if (!guest) return '—';
+    const cat = (guest.status || guest.guestCategory || '').toLowerCase();
+    if (cat === 'vip') return 'VIP';
+    if (cat === 'classique') return 'CLASSIQUE';
     if (guest.isPresent === true) return 'PRÉSENT';
     if (guest.isScanned === true) return 'ABSENT';
     return 'EN ATTENTE';
@@ -316,7 +320,7 @@ export default function GuestManagement() {
     if (eventId && token) fetchEventCapacity();
   }, [eventId, token]);
 
-  const vipCount = useMemo(() => guestList.filter(g => g.status?.toLowerCase() === 'vip').length, [guestList]);
+  const vipCount = useMemo(() => guestList.filter(g => (g.status || g.guestCategory || '').toLowerCase() === 'vip').length, [guestList]);
   const presentCount = useMemo(() => guestList.filter(g => g.isPresent === true).length, [guestList]);
   const isNearLimit = guestList.length >= maxCapacity;
 
@@ -550,7 +554,7 @@ export default function GuestManagement() {
                   const guestId = getGuestId(guest);
                   const isSelected = selectedIds.includes(guestId);
                   const statusLabel = getStatusLabel(guest);
-                  const isVip = (guest.status || '').toLowerCase() === 'vip';
+                  const isVip = ((guest.status || guest.guestCategory || '').toLowerCase() === 'vip');
                   
                   return (
                     <tr 

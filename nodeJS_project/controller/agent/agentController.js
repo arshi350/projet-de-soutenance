@@ -93,6 +93,16 @@ const createAgentController = async (req, res) => {
     // Optionnel : Envoi immédiat des identifiants par email
     let emailSent = false;
     if (sendEmailNow) {
+      if (!event.EventCode) {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+          code += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        event.EventCode = code;
+        await event.save();
+      }
+
       const emailResult = await sendAgentCredentialsEmail({
         agentEmail: agentUser.email,
         agentName: `${agentUser.first_name} ${agentUser.last_name}`.trim(),
@@ -183,6 +193,15 @@ const sendAgentCredentialsController = async (req, res) => {
     }
 
     const event = await eventModel.findById(agent.eventId);
+    if (event && !event.EventCode) {
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < 8; i++) {
+        code += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      event.EventCode = code;
+      await event.save();
+    }
     const eventTitle = event ? event.titre : 'Votre Événement';
     const eventCode = event ? event.EventCode : '';
 

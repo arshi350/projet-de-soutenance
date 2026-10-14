@@ -5,6 +5,8 @@
 <Workspace>
 	<Local Expanded="Yes">
 		<Model Expanded="Yes" ID="{83F2F42F-AB36-4C01-934F-E004ECC1232E}" Name="ModeleOrienteObjet_1" Type="{18112060-1A4B-11D1-83D9-444553540000}" URL="diagramme de classe.moo"/>
+		<Model Expanded="Yes" ID="{83F2F42F-AB36-4C01-934F-E004ECC1232E}" Loaded="No" Name="ModeleOrienteObjet_1" Type="{18112060-1A4B-11D1-83D9-444553540000}" URL="diagramme de classe.moo"/>
+		<Model Expanded="Yes" ID="{496DBF65-6152-45BA-891F-C071184F0079}" Name="Projet_1" Type="{FF4B6538-9856-42CF-B9B9-304ED370CEAA}" URL="Projet_1/Projet_1.prj"/>
 	</Local>
 	<BrowserModule Name="Référentiel"/>
 </Workspace>

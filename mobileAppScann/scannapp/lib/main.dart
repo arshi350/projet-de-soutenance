@@ -5,6 +5,7 @@ import 'providers/auth_provider.dart';
 import 'providers/event_provider.dart';
 import 'providers/guest_provider.dart';
 import 'providers/scan_provider.dart';
+import 'providers/settings_provider.dart';
 import 'theme/app_theme.dart';
 import 'pages/events_list_page.dart';
 import 'pages/login_page.dart';
@@ -24,12 +25,27 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EventProvider()),
         ChangeNotifierProvider(create: (_) => GuestProvider()),
         ChangeNotifierProvider(create: (_) => ScanProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()..loadPreferences()),
       ],
-      child: MaterialApp(  
-        title: 'ARSHIEVENT Scan',
-        theme: AppTheme.lightTheme,
-        debugShowCheckedModeBanner: false,
-        home: const _AppWrapper(),
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
+          return MaterialApp(  
+            title: 'ARSHIEVENT Scan',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: settings.darkModeEnabled ? ThemeMode.dark : ThemeMode.light,
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(settings.textScaleFactor),
+                ),
+                child: child ?? const SizedBox(),
+              );
+            },
+            debugShowCheckedModeBanner: false,
+            home: const _AppWrapper(),
+          );
+        },
       ),
     );
   }

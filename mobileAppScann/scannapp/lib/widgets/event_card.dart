@@ -22,19 +22,37 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.cardBackground : Colors.white;
+    final cardBorder = isDark
+        ? AppColors.white.withValues(alpha: 0.1)
+        : const Color(0xFFE2E8F0);
+    final shadowColor = isDark
+        ? Colors.black.withValues(alpha: 0.3)
+        : Colors.black.withValues(alpha: 0.06);
+    final titleColor = isDark ? AppColors.white : AppColors.blue;
+    final subtextColor = isDark ? AppColors.grey : const Color(0xFF64748B);
+    final dividerColor = isDark
+        ? AppColors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE2E8F0);
+    final outlineBtnColor = isDark ? AppColors.grey : AppColors.blue;
+    final outlineBorderColor = isDark
+        ? AppColors.white.withValues(alpha: 0.2)
+        : const Color(0xFFCBD5E1);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: cardBg,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.white.withValues(alpha: 0.1),
+          color: cardBorder,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: shadowColor,
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -71,7 +89,7 @@ class EventCard extends StatelessWidget {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.white,
+                        color: titleColor,
                         letterSpacing: 0.2,
                       ),
                     ),
@@ -132,29 +150,29 @@ class EventCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.grey),
+              Icon(Icons.calendar_today_rounded, size: 14, color: subtextColor),
               const SizedBox(width: 6),
               Text(
                 '${event.formattedDate}, ${event.time}',
-                style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.grey),
+                style: GoogleFonts.plusJakartaSans(fontSize: 13, color: subtextColor),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Row(
             children: [
-              const Icon(Icons.location_on_rounded, size: 14, color: AppColors.grey),
+              Icon(Icons.location_on_rounded, size: 14, color: subtextColor),
               const SizedBox(width: 6),
               Text(
                 event.location,
-                style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.grey),
+                style: GoogleFonts.plusJakartaSans(fontSize: 13, color: subtextColor),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Container(
             height: 1,
-            color: AppColors.white.withValues(alpha: 0.08),
+            color: dividerColor,
           ),
           const SizedBox(height: 14),
           Row(
@@ -162,11 +180,13 @@ class EventCard extends StatelessWidget {
               _buildStatItem(
                 Icons.people_outline_rounded,
                 '${event.totalGuests} invités',
+                subtextColor,
               ),
               const SizedBox(width: 16),
               _buildStatItem(
                 Icons.qr_code_scanner_rounded,
                 '${event.scannedGuests} scannés',
+                subtextColor,
               ),
               const Spacer(),
               Container(
@@ -191,7 +211,9 @@ class EventCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: event.attendanceRate,
-              backgroundColor: AppColors.greyLight.withValues(alpha: 0.3),
+              backgroundColor: isDark
+                  ? AppColors.greyLight.withValues(alpha: 0.3)
+                  : const Color(0xFFE2E8F0),
               color: AppColors.orange,
               minHeight: 7,
             ),
@@ -205,8 +227,8 @@ class EventCard extends StatelessWidget {
                   icon: const Icon(Icons.people_alt_outlined, size: 16),
                   label: const Text('Invités'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.grey,
-                    side: BorderSide(color: AppColors.white.withValues(alpha: 0.2)),
+                    foregroundColor: outlineBtnColor,
+                    side: BorderSide(color: outlineBorderColor),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
@@ -218,8 +240,8 @@ class EventCard extends StatelessWidget {
                   icon: const Icon(Icons.show_chart_rounded, size: 16),
                   label: const Text('Stats'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.grey,
-                    side: BorderSide(color: AppColors.white.withValues(alpha: 0.2)),
+                    foregroundColor: outlineBtnColor,
+                    side: BorderSide(color: outlineBorderColor),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
@@ -247,16 +269,16 @@ class EventCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String text) {
+  Widget _buildStatItem(IconData icon, String text, Color color) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: AppColors.grey),
+        Icon(icon, size: 14, color: color),
         const SizedBox(width: 6),
         Text(
           text,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 12,
-            color: AppColors.grey,
+            color: color,
             fontWeight: FontWeight.w500,
           ),
         ),

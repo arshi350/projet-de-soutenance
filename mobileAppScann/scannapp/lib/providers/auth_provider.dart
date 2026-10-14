@@ -12,6 +12,8 @@ class AuthProvider extends ChangeNotifier {
   bool _isEventConnected = false;
   bool _isLoading = false;
   String? _error;
+  bool _isAgentEventLoading = false;
+  String? _agentEventError;
 
   String? get token => _token;
   String? get userId => _userId;
@@ -20,6 +22,8 @@ class AuthProvider extends ChangeNotifier {
   bool get isEventConnected => _isEventConnected;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isAgentEventLoading => _isAgentEventLoading;
+  String? get agentEventError => _agentEventError;
   bool get isAuthenticated => _token != null;
   bool get hasEventSelected => _currentEvent != null && _isEventConnected;
 
@@ -57,22 +61,34 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<EventModel?> fetchMyAgentEvent() async {
+    _isAgentEventLoading = true;
+    _agentEventError = null;
+    notifyListeners();
+
     try {
       final agentEvtId = assignedEventId;
       EventModel? event;
       if (agentEvtId != null && agentEvtId.isNotEmpty) {
+        debugPrint('Agent: chargement événement par ID assigné: $agentEvtId');
         event = await ApiService.getEventById(agentEvtId);
       }
       event ??= await ApiService.getMyAgentEvent();
 
       if (event != null) {
         _currentEvent = event;
-        notifyListeners();
+        debugPrint('Agent: événement chargé avec succès: ${event.name}');
+      } else {
+        _agentEventError = 'Aucun événement assigné trouvé.';
+        debugPrint('Agent: aucun événement trouvé');
       }
       return event;
     } catch (e) {
       debugPrint('Erreur fetchMyAgentEvent: $e');
+      _agentEventError = 'Erreur de chargement : ${e.toString().replaceAll("Exception: ", "")}';
       return null;
+    } finally {
+      _isAgentEventLoading = false;
+      notifyListeners();
     }
   }
 
